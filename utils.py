@@ -196,20 +196,10 @@ def huge_format():
                     row_dict['Wet_BFL_Dur'] = flow_metrics['Wet_BFL_Dur'].iloc[flow_index]
                     row_dict['Wet_BFL_Mag_50'] = flow_metrics['Wet_BFL_Mag_50'].iloc[flow_index]
                     row_dict['Wet_Tim'] = flow_metrics['Wet_Tim'].iloc[flow_index]
-                    row_dict['year'] = flow_metrics.index[flow_index]
+                    row_dict['year'] = year
                     huge_df = huge_df.append(row_dict, ignore_index=True)
-                    # import pdb; pdb.set_trace()
-        huge_df.to_csv('data_outputs/testbb.csv')
-        import pdb; pdb.set_trace()
-        
-
-
-                        
-
-
-
-                         
-
+    huge_df.to_csv('data_outputs/all_model_data.csv')
+    # import pdb; pdb.set_trace()
     # For the year, index the accompanying prism and sflow data
     # For the tree, index the accompanying tree metadata (same for entire tree)
 

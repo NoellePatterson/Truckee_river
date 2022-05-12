@@ -5,6 +5,9 @@ import matplotlib.pyplot as plt
 # Calculate Pearson correlation coefficients for site-averaged growth data and environmental variables
 
 # import all relevant datasets from csv
+isotopes = pd.read_csv('data_inputs/isotopes.csv')
+
+
 bb_bai = pd.read_csv('data_inputs/site_avg_bai/BB_bai_site_avg.csv') # 109 yr POR
 n_bai = pd.read_csv('data_inputs/site_avg_bai/N_bai_site_avg.csv') # 124 yr POR
 mre_bai = pd.read_csv('data_inputs/site_avg_bai/MRE_bai_site_avg.csv') # 38 yr POR
@@ -45,4 +48,20 @@ def create_correlation_matrix(site_bai, site_flow_data, output_name):
     plt.tight_layout()
     # import pdb; pdb.set_trace()
     plt.savefig('data_outputs/{}_corr_matrix_flow_offset.jpeg'.format(output_name), bbox_inches='tight')
-corr = create_correlation_matrix(r_bai, vista_upstream_ffc, 'Ranch 102')
+# corr = create_correlation_matrix(r_bai, vista_upstream_ffc, 'Ranch 102')
+
+# create input correlation matrix for isotopes
+def create_correlation_matrix(isotopes, output_name):
+    variable_dfs = [isotopes]
+    variable_df = reduce(lambda  left,right: pd.merge(left,right,on=['year'], how='outer'), variable_dfs)
+    # variable_df = variable_df[87:].reset_index(drop=True)
+    # consider removing first rows of df before sflow or tree data
+    correlation_mat = variable_df.corr()
+    plt.figure(figsize=(12,12))
+    plt.subplot(1,1,1)
+    sns.heatmap(correlation_mat, annot = True)
+    plt.title(output_name + ' Pearson correlations')
+    plt.tight_layout()
+    # import pdb; pdb.set_trace()
+    plt.savefig('data_outputs/{}_corr_matrix_flow_offset.jpeg'.format(output_name), bbox_inches='tight')
+corr = create_correlation_matrix(isotopes.drop(['Year'], axis=1),  'All isotopes')
