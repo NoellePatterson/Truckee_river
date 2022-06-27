@@ -210,12 +210,15 @@ def huge_format():
     prism_df = pd.merge(prism_df, precip, on='year')
     prism_df = pd.merge(prism_df, pdo, on='year')
 
+    # Create variable for regulation period: pre/post 1973 for upstream sites, pre/post 1982 for downstream sites
+
+
     # Create a bunch of lists to fill iteratively with needed data
     meta_cols = tree_metadata.columns.tolist()
     flow_cols = ffc_blw_derby.columns.tolist()
     prism_cols = ['annual_max_vpd', 'annual_mean_temp', 'annual_precip', 'pdo']
     # prism_cols = ['spring_max_vpd', 'spring_mean_temp', 'spring_precip']
-    columns = ['bai', 'year'] + meta_cols + prism_cols + flow_cols
+    columns = ['bai', 'year'] + meta_cols + ['regulation'] + prism_cols + flow_cols
     bai_ls = []
     year_ls = []
     tree_id_ls = []
@@ -224,6 +227,7 @@ def huge_format():
     lon_ls  = []
     sex_ls  = []
     to_river_ls  = []
+    regulation = []
     annual_max_vpd_ls  = []
     annual_mean_temp_ls  = []
     annual_precip_ls  = []
@@ -252,7 +256,7 @@ def huge_format():
                     meta_index = index
                     tree_id = tree_metadata['Tree_id'][meta_index]
                     break
-            for tree_index, bai in enumerate(tree[1]):
+            for tree_index, bai in enumerate(tree[1]): # iterating through years
                 if np.isnan(bai) == True:
                     continue # don't add data before por of tree
                 else:
@@ -270,6 +274,7 @@ def huge_format():
                         if value == year:
                             prism_index = p_index
                             break
+
                     # import pdb; pdb.set_trace()
                     annual_max_vpd_ls.append(prism_df['annual_max_vpd'][prism_index]) 
                     annual_mean_temp_ls.append(prism_df['annual_mean_temp'][prism_index]) 
@@ -284,6 +289,18 @@ def huge_format():
                         if value == year:
                             flow_index = f_index
                             break
+                    # assign regulation period based on breakpoint year ()
+                    # import pdb; pdb.set_trace()
+                    site_name = tree_metadata['Site_id'][meta_index]
+                    if site_name == 'BB' or site_name == 'N':
+                        breakpoint = 1973
+                    else:
+                        breakpoint = 1982
+                    if year < breakpoint:
+                        regulation.append('pre')
+                    else:
+                        regulation.append('post')
+                    
                     fa_mag_ls.append(flow_metrics['FA_Mag'].iloc[flow_index])
                     fa_tim_ls.append(flow_metrics['FA_Tim'].iloc[flow_index])
                     ds_Tim_ls.append(flow_metrics['DS_Tim'].iloc[flow_index]) 
@@ -300,7 +317,7 @@ def huge_format():
                     wet_Tim_ls.append(flow_metrics['Wet_Tim'].iloc[flow_index]) 
                     year_ls.append(year)           
 
-    zipped_ls = list(zip(bai_ls, year_ls, tree_id_ls, site_id_ls, lat_ls, lon_ls, sex_ls, to_river_ls, annual_max_vpd_ls,
+    zipped_ls = list(zip(bai_ls, year_ls, tree_id_ls, site_id_ls, lat_ls, lon_ls, sex_ls, to_river_ls, regulation, annual_max_vpd_ls,
     annual_mean_temp_ls, annual_precip_ls, pdo_ls, fa_mag_ls, fa_tim_ls, wet_BFL_Mag_50_ls, wet_Tim_ls, wet_BFL_Dur_ls, sp_Mag_ls,
     sp_Tim_ls, sp_ROC_ls, ds_Mag_50_ls, ds_Mag_90_ls, ds_Tim_ls, ds_Dur_WS_ls, avg_ls, cv_ls))
     huge_df = pd.DataFrame(zipped_ls, columns=columns)
