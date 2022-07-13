@@ -254,73 +254,75 @@ def huge_format():
     for site in sites:
         for tree in site.iteritems(): # iterates over a tuple, 0 is name 1 is attribute list
             # ID the row in tree_metadata that aligns with this tree
+            tree_ls = tree[1].dropna()
+            tree_ls = tree_ls[5:] # remove first five years growth to remove potential young growth effects
             for index, value in enumerate(tree_metadata['Tree_id']):
                 if value == tree[0]:
                     meta_index = index
                     tree_id = tree_metadata['Tree_id'][meta_index]
                     break
-            for tree_index, bai in enumerate(tree[1]): # iterating through years
-                if np.isnan(bai) == True:
-                    continue # don't add data before por of tree
+            for tree_index, bai in enumerate(tree_ls): # iterating through years
+                year = tree_ls.index[tree_index]
+                # remove tree data before 1918 since blw derby gage only starts
+                if year < 1918:
+                    continue
+                # find correct index in prism dataset
+                for p_index, value in enumerate(prism_df['year']):
+                    if value == year:
+                        prism_index = p_index
+                        break
+                # find correct index in streamflow dataset
+                if tree_id[0:3] == 'MR' or tree_id == 'R':
+                    flow_metrics = ffc_vista
                 else:
-                    bai_ls.append(bai)
-                    tree_id_ls.append(tree_metadata['Tree_id'][meta_index])
-                    site_id_ls.append(tree_metadata['Site_id'][meta_index])
-                    lat_ls.append(tree_metadata['Lat'][meta_index])
-                    lon_ls.append(tree_metadata['Lon'][meta_index]) 
-                    sex_ls.append(tree_metadata['Sex'][meta_index]) 
-                    to_river_ls.append(tree_metadata['To_river_m'][meta_index]) 
+                    flow_metrics = ffc_blw_derby
+                for f_index, value in enumerate(flow_metrics.index):
+                    if value == year:
+                        flow_index = f_index
+                        break
+                
+                # assign regulation period based on breakpoint year ()
+                site_name = tree_metadata['Site_id'][meta_index]
+                if site_name == 'BB' or site_name == 'N':
+                    breakpoint = 1973
+                else:
+                    breakpoint = 1982
+                if year < breakpoint:
+                    regulation.append('pre')
+                else:
+                    regulation.append('post')
+                
+                fa_mag_ls.append(flow_metrics['FA_Mag'].iloc[flow_index])
+                fa_tim_ls.append(flow_metrics['FA_Tim'].iloc[flow_index])
+                ds_Tim_ls.append(flow_metrics['DS_Tim'].iloc[flow_index]) 
+                ds_Mag_90_ls.append(flow_metrics['DS_Mag_90'].iloc[flow_index]) 
+                ds_Mag_50_ls.append(flow_metrics['DS_Mag_50'].iloc[flow_index]) 
+                ds_Dur_WS_ls.append(flow_metrics['DS_Dur_WS'].iloc[flow_index])
+                cv_ls.append(flow_metrics['CV'].iloc[flow_index]) 
+                avg_ls.append(flow_metrics['Avg'].iloc[flow_index])
+                sp_Mag_ls.append(flow_metrics['SP_Mag'].iloc[flow_index]) 
+                sp_ROC_ls.append(flow_metrics['SP_ROC'].iloc[flow_index]) 
+                sp_Tim_ls.append(flow_metrics['SP_Tim'].iloc[flow_index]) 
+                sp_Dur_ls.append(flow_metrics['SP_Dur'].iloc[flow_index]) 
+                wet_BFL_Dur_ls.append(flow_metrics['Wet_BFL_Dur'].iloc[flow_index]) 
+                wet_BFL_Mag_50_ls.append(flow_metrics['Wet_BFL_Mag_50'].iloc[flow_index]) 
+                wet_Tim_ls.append(flow_metrics['Wet_Tim'].iloc[flow_index]) 
+                peak_mag_ls.append(flow_metrics['Peak_mag'].iloc[flow_index])
+                year_ls.append(year)    
 
-                    year = tree[1].index[tree_index]
-                    # find correct index in prism dataset
-                    for p_index, value in enumerate(prism_df['year']):
-                        if value == year:
-                            prism_index = p_index
-                            break
+                bai_ls.append(bai)
+                tree_id_ls.append(tree_metadata['Tree_id'][meta_index])
+                site_id_ls.append(tree_metadata['Site_id'][meta_index])
+                lat_ls.append(tree_metadata['Lat'][meta_index])
+                lon_ls.append(tree_metadata['Lon'][meta_index]) 
+                sex_ls.append(tree_metadata['Sex'][meta_index]) 
+                to_river_ls.append(tree_metadata['To_river_m'][meta_index]) 
 
-                    # import pdb; pdb.set_trace()
-                    annual_max_vpd_ls.append(prism_df['annual_max_vpd'][prism_index]) 
-                    annual_mean_temp_ls.append(prism_df['annual_mean_temp'][prism_index]) 
-                    annual_precip_ls.append(prism_df['annual_precip'][prism_index]) 
-                    pdo_ls.append(prism_df['pdo'][prism_index])
-                    # find correct index in streamflow dataset
-                    if tree_id[0:3] == 'MR' or tree_id == 'R':
-                        flow_metrics = ffc_vista
-                    else:
-                        flow_metrics = ffc_blw_derby
-                    for f_index, value in enumerate(flow_metrics.index):
-                        if value == year:
-                            flow_index = f_index
-                            break
-                    # assign regulation period based on breakpoint year ()
-                    # import pdb; pdb.set_trace()
-                    site_name = tree_metadata['Site_id'][meta_index]
-                    if site_name == 'BB' or site_name == 'N':
-                        breakpoint = 1973
-                    else:
-                        breakpoint = 1982
-                    if year < breakpoint:
-                        regulation.append('pre')
-                    else:
-                        regulation.append('post')
-                    
-                    fa_mag_ls.append(flow_metrics['FA_Mag'].iloc[flow_index])
-                    fa_tim_ls.append(flow_metrics['FA_Tim'].iloc[flow_index])
-                    ds_Tim_ls.append(flow_metrics['DS_Tim'].iloc[flow_index]) 
-                    ds_Mag_90_ls.append(flow_metrics['DS_Mag_90'].iloc[flow_index]) 
-                    ds_Mag_50_ls.append(flow_metrics['DS_Mag_50'].iloc[flow_index]) 
-                    ds_Dur_WS_ls.append(flow_metrics['DS_Dur_WS'].iloc[flow_index])
-                    cv_ls.append(flow_metrics['CV'].iloc[flow_index]) 
-                    avg_ls.append(flow_metrics['Avg'].iloc[flow_index])
-                    sp_Mag_ls.append(flow_metrics['SP_Mag'].iloc[flow_index]) 
-                    sp_ROC_ls.append(flow_metrics['SP_ROC'].iloc[flow_index]) 
-                    sp_Tim_ls.append(flow_metrics['SP_Tim'].iloc[flow_index]) 
-                    sp_Dur_ls.append(flow_metrics['SP_Dur'].iloc[flow_index]) 
-                    wet_BFL_Dur_ls.append(flow_metrics['Wet_BFL_Dur'].iloc[flow_index]) 
-                    wet_BFL_Mag_50_ls.append(flow_metrics['Wet_BFL_Mag_50'].iloc[flow_index]) 
-                    wet_Tim_ls.append(flow_metrics['Wet_Tim'].iloc[flow_index]) 
-                    peak_mag_ls.append(flow_metrics['Peak_mag'].iloc[flow_index])
-                    year_ls.append(year)           
+                annual_max_vpd_ls.append(prism_df['annual_max_vpd'][prism_index]) 
+                annual_mean_temp_ls.append(prism_df['annual_mean_temp'][prism_index]) 
+                annual_precip_ls.append(prism_df['annual_precip'][prism_index]) 
+                pdo_ls.append(prism_df['pdo'][prism_index])
+       
 
     zipped_ls = list(zip(bai_ls, year_ls, tree_id_ls, site_id_ls, lat_ls, lon_ls, sex_ls, to_river_ls, regulation, annual_max_vpd_ls,
     annual_mean_temp_ls, annual_precip_ls, pdo_ls, fa_mag_ls, fa_tim_ls, wet_BFL_Mag_50_ls, wet_Tim_ls, wet_BFL_Dur_ls, peak_mag_ls, sp_Mag_ls,
