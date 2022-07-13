@@ -27,13 +27,13 @@ def tukey_test(breakpoint_year, dict_name, mean_dict_name):
     period = []
     for index, year in enumerate(timeseries.index):
         if year < breakpoint_year:
-            period.append('pre')
+            period.append('1-pre')
         else:
-            period.append('post')
+            period.append('2-post')
     tukey_dict = {'data':timeseries.tolist(), 'period':period}
     tukey_df = pd.DataFrame(tukey_dict)
     tukey_df = tukey_df.dropna()
-    if len(np.where(tukey_df['period']=='pre')[0]) < 15:
+    if len(np.where(tukey_df['period']=='1-pre')[0]) < 15: # require at least 15 years in each comparison group
         results[dict_name].append(np.nan)
         results[mean_dict_name].append(np.nan)
     else:
@@ -48,7 +48,7 @@ for (name, timeseries) in tree_timeseries.iteritems():
     output = tukey_test(1973, 'tukey_73', 'mean_diff_73')
     output = tukey_test(1982, 'tukey_82', 'mean_diff_82')
 results_df = pd.DataFrame(results)
-results_df.to_csv('data_outputs/Tukey_hsd_alltrees.csv')
+results_df.to_csv('data_outputs/Tukey_hsd_alltrees_new.csv')
 pdb.set_trace()
 
 # print out results into a table. 

@@ -79,23 +79,33 @@ for key in models_dict:
         metric_name = list(metric_subset.items())[0][0]
         dat = list(metric_subset.items())[0][1]
 
-        bb_rows = dat[dat['site']=='BB']
-        mre_rows = dat[dat['site']=='MRE']
-        mrw_rows = dat[dat['site']=='MRW']
-        n_rows = dat[dat['site']=='N']
-        r_rows = dat[dat['site']=='R']
-        data_subsets = [['BB', bb_rows], ['MRE', mre_rows], ['MRW', mrw_rows], ['N', n_rows], ['R', r_rows]]
+        bbpre_rows = dat[dat['site']=='BB']
+        bbpost_rows = dat[dat['site']=='BB']
+        mrepre_rows = dat[dat['site']=='MRE']
+        mrepost_rows = dat[dat['site']=='MRE']
+        mrwpre_rows = dat[dat['site']=='MRW']
+        mrwpost_rows = dat[dat['site']=='MRW']
+        npre_rows = dat[dat['site']=='N']
+        npost_rows = dat[dat['site']=='N']
+        rpre_rows = dat[dat['site']=='R']
+        rpost_rows = dat[dat['site']=='R']
+        data_subsets = [['BBpre', bbpre_rows], ['MREpre', mrepre_rows], ['MRWpre', mrwpre_rows], ['Npre', npre_rows], ['Rpre', rpre_rows],
+        ['BBpost', bbpost_rows], ['MREpost', mrepost_rows], ['MRWpost', mrwpost_rows], ['Npost', npost_rows], ['Rpost', rpost_rows]]
         pre_sig = 0
         post_sig = 0
-        bb_sig = 0
-        mre_sig = 0
-        mrw_sig = 0
-        n_sig = 0
-        r_sig = 0
+        bbpre_sig = 0
+        mrepre_sig = 0
+        mrwpre_sig = 0
+        npre_sig = 0
+        rpre_sig = 0
+        bbpost_sig = 0
+        mrepost_sig = 0
+        mrwpost_sig = 0
+        npost_sig = 0
+        rpost_sig = 0
 
         for site in data_subsets:
             total_count = 0
-            check = 0
             for index, row in site[1].iterrows(): # loop through again, counting up significance per metric
                 if row['significance'] == True:
                     if row['reg_period'] == 'post':
@@ -105,20 +115,31 @@ for key in models_dict:
             for index, row in site[1].iterrows(): # loop through again, counting up significance per metric
                 total_count += 1
                 if row['significance'] == True:
-                    check += 1
-                    if row['site'] == 'BB':
-                        bb_sig += 1
-                    elif row['site'] == 'MRE':
-                        mre_sig += 1
-                    elif row['site'] == 'MRW':
-                        mrw_sig += 1
-                    elif row['site'] == 'R':
-                        r_sig += 1
-                    elif row['site'] == 'N':
-                        n_sig += 1
+                    if row['reg_period'] == 'post':
+                        if row['site'] == 'BB':
+                            bbpost_sig += 1
+                        elif row['site'] == 'MRE':
+                            mrepost_sig += 1
+                        elif row['site'] == 'MRW':
+                            mrwpost_sig += 1
+                        elif row['site'] == 'R':
+                            rpost_sig += 1
+                        elif row['site'] == 'N':
+                            npost_sig += 1
+                    elif row['reg_period'] == 'pre':
+                        if row['site'] == 'BB':
+                            bbpre_sig += 1
+                        elif row['site'] == 'MRE':
+                            mrepre_sig += 1
+                        elif row['site'] == 'MRW':
+                            mrwpre_sig += 1
+                        elif row['site'] == 'R':
+                            rpre_sig += 1
+                        elif row['site'] == 'N':
+                            npre_sig += 1
         # Build output table: convert counts into percentages
-        all_outputs.append([metric_name, pre_sig, post_sig, mre_sig, mrw_sig, r_sig, bb_sig, n_sig])
-    df = pd.DataFrame(all_outputs, columns=['metric', 'pre_sig', 'post_sig', 'mre_sig_19', 'mrw_sig_19', 'r_sig_14', 'bb_sig_10', 'n_sig_20'])
-    df.to_csv('data_outputs/bayes_model_summary'+key+'.csv')
+        all_outputs.append([metric_name, pre_sig, post_sig, mrepre_sig, mrwpre_sig, rpre_sig, bbpre_sig, npre_sig, mrepost_sig, mrwpost_sig, rpost_sig, bbpost_sig, npost_sig])
+    df = pd.DataFrame(all_outputs, columns=['metric', 'pre_sig', 'post_sig', 'mre_pre_sig_19', 'mrw_pre_sig_19', 'r_pre_sig_14', 'bb_pre_sig_10', 'n_pre_sig_20', 'mre_post_sig_19', 'mrw_post_sig_19', 'r_post_sig_14', 'bb_post_sig_10', 'n_post_sig_20'])
+    df.to_csv('data_outputs/bayes_model_siteprepost_summary'+key+'.csv')
 
 

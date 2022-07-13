@@ -75,45 +75,49 @@ def bai_plot():
     #import bai lines, new csv
     precip = pd.read_csv('data_inputs/annual_precip.csv')
     precip = precip.set_index('year')
-    precip = precip.iloc[64:]
+    precip = precip.iloc[49:]
 
     all_sites = pd.read_csv('data_inputs/site_avg_bai/All_bai_site_avg.csv')
     all_sites = all_sites.set_index('year')
-    # constrain years to 1960-2019
-    all_sites = all_sites.iloc[63:]
+    # constrain years to 1945-2019 for DS
+    all_sites = all_sites.iloc[48:]
     us_plot = pd.to_numeric(all_sites['mrw_r_avg'], errors='coerce')
-    us_plot = us_plot.iloc[3:] # cut off first three years in 1960 bc of lack of enough data
+    us_plot = us_plot.iloc[18:] # cut off until 1963 bc of lack of enough data
     ds_plot = pd.to_numeric(all_sites['DS_avg'], errors='coerce')
-    # pdb.set_trace()
     #make pretty, label, output
     fig, ax1 = plt.subplots()
-    ax1.plot(ds_plot, linestyle='-', color='#CC5801', label='Downstream sites', linewidth='3')
-    ax1.plot(us_plot, linestyle='-', color='C0', label='Upstream sites', linewidth='3')
-    ax1.ylabel('Basal area increment '+ r'$(mm^2)$')
-    ax1.legend()
-    ax2 = ax1.twinx()
-    ax2.bar(precip.index, precip['annual_precip'], color='#bfe6ff', alpha=0.75)
-    ax2.set_ylabel('Annual precipitation, mm')
-    ax2.legend(loc='upper left')
+    ax1.bar(precip.index, precip['annual_precip'], color='#bfe6ff', alpha=0.75, label='Annual precipitation')
+    ax1.set_ylabel('Annual precipitation, mm')
+    ax2 = ax1.twinx()   
+    ax2.plot(ds_plot, linestyle='-', color='#CC5801', label='Downstream sites', linewidth='3')
+    ax2.plot(us_plot, linestyle='-', color='C0', label='Upstream sites', linewidth='3')
+    ax2.set_ylabel('Basal area increment '+ r'$(mm^2)$')
+    ax2.set_ylim(bottom=2000, top=11000)
+    lines_1, labels_1 = ax1.get_legend_handles_labels()
+    lines_2, labels_2 = ax2.get_legend_handles_labels()
+    lines = lines_1 + lines_2
+    labels = labels_1 + labels_2
+    
+    ax1.legend(lines, labels, loc='upper left')
     plt.show()
     return
-output = bai_plot()
+# output = bai_plot()
 
 def r102_plot():
     isotopes = pd.read_csv('data_inputs/isotopes.csv')
     isotopes = isotopes.drop(['N', 'Rpooled', 'MRW'], axis=1)
     isotopes = isotopes.dropna()
     isotopes = isotopes.set_index('Year')
-    r2 = isotopes['R2']
-    r16 = isotopes['R16']
+    r2 = abs(isotopes['R2'])
+    r16 = abs(isotopes['R16'])
+    plt.rcParams.update({'font.size': 16})
     plt.subplot(1,1,1)
-    plt.plot(isotopes['R2'], color='red', label='far from channel')
-    plt.plot(isotopes['R16'], color='orange', label='near channel')
+    plt.plot(r2, color='red', label='farther from channel', linewidth=2)
+    plt.plot(r16, color='orange', label='near channel', linewidth=2)
     plt.axvline(1982, color='black', linestyle='dotted')
     plt.legend()
-    plt.ylabel(r'$\delta^{13}$'+'C (%)')
+    plt.ylabel(r'$\delta^{13}$'+'C% (absolute values)')
     plt.show()
-    import pdb; pdb.set_trace()
     return 
 # plot = r102_plot()
 
@@ -134,9 +138,22 @@ def n_plot():
     plt.show()
 # plot = n_plot()
 
+def model_sig():
+    data = pd.read_csv('data_inputs/model_sig_plotter.csv')
+    # first plot without random effects
+    data = data.drop(axis=0, index=0)
+    plt.rcParams.update({'font.size': 14})
+    fig, ax = plt.subplots(figsize = (15, 7))
+    ax.barh(data['Model'], data['Average'], color='teal')
+    ax.set_xlabel('Number of significant model coefficients')
+    fig.tight_layout()
+    plt.show()
+    return
+# plot = model_sig()
+
 def posterior_density():
     # bring in mcmc csv's
-    mcmc = pd.read_csv('data_inputs/mcmc_samples_notemp.csv', index_col=0)
+    mcmc = pd.read_csv('data_inputs/mcmc_samples_dry.csv', index_col=0)
 
     # decide which params to plot. May need to average some cols. start w avg annual Q by reg, for downstream sites (avg'd?)
     mcmc_cols = mcmc.columns
@@ -150,12 +167,12 @@ def posterior_density():
     n_avg_post = []
     r_avg_pre = []
     r_avg_post = []
-    metric = 'bprecip'
+    metric = 'bdm50'
     for mc_col in mcmc_cols:
         # make col number an int
-        nums = re.findall(r'\d+', mc_col)#[1:3] # [1:3] for dry season only
+        nums = re.findall(r'\d+', mc_col)[1:3] # [1:3] for dry season only
         name = re.findall('[a-z]+', mc_col)
-        # name = [mc_col[0:5]] # for dry season only
+        name = [mc_col[0:5]] # for dry season only
         if name[0] == metric:
             if int(nums[0]) < 11: # bb indices
                 if int(nums[1]) == 1:
@@ -182,7 +199,6 @@ def posterior_density():
                     r_avg_post.append(mcmc[mc_col])
                 elif int(nums[1]) == 2:
                     r_avg_pre.append(mcmc[mc_col])
-
     # Concat all indiv trees at a site into one long df (retains more info than averaging)
     bb_avg_pre = pd.concat(bb_avg_pre, axis=0).to_frame()
     bb_avg_post = pd.concat(bb_avg_post, axis=0).to_frame()
@@ -207,11 +223,11 @@ def posterior_density():
                     label = d_label)
     # plot_inputs = [[bb_avg_pre, 'Site #4 1973-2019'], [mre_avg_pre, 'Site #2 1973-2019'], [mrw_avg_pre, 'Site #1 1973-2019'],
     # [n_avg_pre, 'Site #5 1973-2019'], [r_avg_pre, 'Site #3 1973-2019']]
-    plot_inputs = [[bb_avg_pre, 'Site #4 1918?-1973'], [bb_avg_post, 'Site #4 1973-2019']]
+    plot_inputs = [[n_avg_pre, 'Site #5 1918?-1973'], [n_avg_post, 'Site #5 1973-2019']]
     for input in plot_inputs:
         plotter(input[0], input[1])
 
-    plt.legend(prop={'size': 10}, loc='upper right')
+    # plt.legend(prop={'size': 10}, loc='upper right')
     # plt.figure(figsize=(8,6))
     plt.title(metric)
     plt.xlabel('Coefficient value')
@@ -219,7 +235,7 @@ def posterior_density():
     # fig = sns.displot(bb_avg_pre, kind='kde', fill=True)
     # fig = sns.displot(bb_avg_post, kind='kde', fill=True)
     # plt.show()
-    plt.savefig('data_outputs/density_plots/density_bb_notempmodel'+ metric +'.jpeg', dpi=300)
+    plt.savefig('data_outputs/density_plots/density_n_'+ metric +'.jpeg', dpi=300)
     # pdb.set_trace()
     return
-# outout = posterior_density()
+outout = posterior_density()

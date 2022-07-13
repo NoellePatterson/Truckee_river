@@ -2,6 +2,7 @@ from matplotlib.pyplot import prism
 import pandas as pd
 from datetime import datetime, timedelta
 import numpy as np
+import pdb
 from sklearn.linear_model import LinearRegression
 import glob
 import warnings
@@ -201,8 +202,8 @@ def huge_format():
 
     
     # make sure environmental datasets rows are all traceable by year
-    ffc_blw_derby = ffc_blw_derby.set_index('year')
-    ffc_vista = ffc_vista.set_index('year')
+    ffc_blw_derby = ffc_blw_derby.set_index('Year')
+    ffc_vista = ffc_vista.set_index('Year')
     tree_metadata = tree_metadata.drop('Dbh_cm', axis=1)
     # prism_df = pd.merge(spring_vpd, spring_t, on='year')
     # prism_df = pd.merge(prism_df, spring_precip, on='year')
@@ -237,8 +238,10 @@ def huge_format():
     wet_BFL_Mag_50_ls = []	
     wet_Tim_ls = []	
     wet_BFL_Dur_ls = []	
+    peak_mag_ls = []
     sp_Mag_ls = []	
     sp_Tim_ls = []	
+    sp_Dur_ls = []
     sp_ROC_ls = []	
     ds_Mag_50_ls = []	
     ds_Mag_90_ls = []	
@@ -312,15 +315,36 @@ def huge_format():
                     sp_Mag_ls.append(flow_metrics['SP_Mag'].iloc[flow_index]) 
                     sp_ROC_ls.append(flow_metrics['SP_ROC'].iloc[flow_index]) 
                     sp_Tim_ls.append(flow_metrics['SP_Tim'].iloc[flow_index]) 
+                    sp_Dur_ls.append(flow_metrics['SP_Dur'].iloc[flow_index]) 
                     wet_BFL_Dur_ls.append(flow_metrics['Wet_BFL_Dur'].iloc[flow_index]) 
                     wet_BFL_Mag_50_ls.append(flow_metrics['Wet_BFL_Mag_50'].iloc[flow_index]) 
                     wet_Tim_ls.append(flow_metrics['Wet_Tim'].iloc[flow_index]) 
+                    peak_mag_ls.append(flow_metrics['Peak_mag'].iloc[flow_index])
                     year_ls.append(year)           
 
     zipped_ls = list(zip(bai_ls, year_ls, tree_id_ls, site_id_ls, lat_ls, lon_ls, sex_ls, to_river_ls, regulation, annual_max_vpd_ls,
-    annual_mean_temp_ls, annual_precip_ls, pdo_ls, fa_mag_ls, fa_tim_ls, wet_BFL_Mag_50_ls, wet_Tim_ls, wet_BFL_Dur_ls, sp_Mag_ls,
-    sp_Tim_ls, sp_ROC_ls, ds_Mag_50_ls, ds_Mag_90_ls, ds_Tim_ls, ds_Dur_WS_ls, avg_ls, cv_ls))
+    annual_mean_temp_ls, annual_precip_ls, pdo_ls, fa_mag_ls, fa_tim_ls, wet_BFL_Mag_50_ls, wet_Tim_ls, wet_BFL_Dur_ls, peak_mag_ls, sp_Mag_ls,
+    sp_Tim_ls, sp_Dur_ls, sp_ROC_ls, ds_Mag_50_ls, ds_Mag_90_ls, ds_Tim_ls, ds_Dur_WS_ls, avg_ls, cv_ls))
     huge_df = pd.DataFrame(zipped_ls, columns=columns)
     huge_df.to_csv('data_outputs/all_model_data.csv')
     return
 output = huge_format()
+
+def tree_age():
+    bb_bai = pd.read_csv('data_inputs/all_trees_bai/BB_bai.csv', index_col=0)
+    mre_bai = pd.read_csv('data_inputs/all_trees_bai/MRE_bai.csv', index_col=0)
+    mrw_bai = pd.read_csv('data_inputs/all_trees_bai/MRW_bai.csv', index_col=0)
+    r_bai = pd.read_csv('data_inputs/all_trees_bai/R_bai.csv', index_col=0)
+    n_bai = pd.read_csv('data_inputs/all_trees_bai/N_bai.csv', index_col=0)
+    sites = [bb_bai, mre_bai, mrw_bai, r_bai, n_bai]
+    tree_age = []
+    trees = []
+    for site in sites:
+        for col in site:
+            data = site[col]
+            tree_age.append(len(site[col].dropna()))
+            trees.append(col)
+    output = pd.DataFrame(tree_age, index=trees)
+    output.to_csv('data_outputs/tree_age.csv')
+    return
+# output = tree_age()
