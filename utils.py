@@ -266,6 +266,9 @@ def huge_format():
                 # remove tree data before 1918 since blw derby gage only starts
                 if year < 1918:
                     continue
+                # don't include any neg/zero-valued BAI (error)
+                if bai <= 0:
+                    continue
                 # find correct index in prism dataset
                 for p_index, value in enumerate(prism_df['year']):
                     if value == year:
