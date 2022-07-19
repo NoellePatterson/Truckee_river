@@ -6,6 +6,8 @@ import jenkspy
 import numpy as np
 import matplotlib.pyplot as plt
 import pdb
+plt.rcParams["axes.grid.axis"] ="y"
+plt.rcParams["axes.grid"] = True
 
 # import data: ffc metrics for vista and blw derby
 vista_upstream_ffc = pd.read_csv('data_inputs/streamflow/ffc_outputs/vista_pearson_vals.csv') # 113 yr POR mb start 1930 to skip over many nas
@@ -14,8 +16,8 @@ vista_upstream_ffc = vista_upstream_ffc.apply(pd.to_numeric, errors='coerce')
 derby_downstream_ffc = derby_downstream_ffc.apply(pd.to_numeric, errors='coerce')
 
 # set year as index
-derby_downstream_ffc = derby_downstream_ffc.set_index('year')
-vista_upstream_ffc = vista_upstream_ffc.set_index('year')
+derby_downstream_ffc = derby_downstream_ffc.set_index('Year')
+vista_upstream_ffc = vista_upstream_ffc.set_index('Year')
 
 
 # make loop function, 
@@ -39,9 +41,49 @@ for metric in metric_cols:
     breakpoint_yrs.append(year)
     mag = (np.nanmean(data[year_index:]) - np.nanmean(data[:year_index]))/np.nanmean(data[:year_index])
     breakpoint_mag.append(mag)
-    if metric == 'SP_ROC':
-        pdb.set_trace()
+    # if metric == 'SP_ROC':
+    #     pdb.set_trace()
     # calc diff as a percentage
 blw_derby_output = pd.DataFrame(list(zip(breakpoint_yrs, breakpoint_mag)), columns=['years', 'percent diff'], index=metric_cols) 
-blw_derby_output.to_csv('data_outputs/metric_diffs_vista.csv')
+# blw_derby_output.to_csv('data_outputs/metric_diffs_vista.csv')
 # pdb.set_trace()
+
+# Make plot printout of notable breakpoints
+
+# Arrange data into same PORs/starting dates. Try starting at 1930 for Vista start date
+
+vista_plot = vista_upstream_ffc.iloc[23:]
+derby_plot = derby_downstream_ffc.iloc[12:]
+
+# Create paneled figure
+plt.style.use('seaborn-white')
+plt.subplot(4, 1, 1)
+plt.plot(derby_plot['DS_Mag_50']*0.0283168) # convert to cms
+plt.axvline(1972, color='black', label = 'regime shift')
+plt.title('Dry Season Median Magnitude', loc='left', fontweight='bold')
+plt.ylabel('Streamflow (cms)')
+plt.grid(axis='x')
+plt.subplot(4, 1, 2)
+plt.plot(derby_plot['Avg']*0.0283168) # convert to cms
+plt.axvline(1970, color='black')
+plt.title('Average Annual Flow', loc='left', fontweight='bold')
+plt.ylabel('Streamflow (cms)')
+plt.grid(axis='x')
+plt.subplot(4, 1, 3)
+plt.plot(derby_plot['CV'])
+plt.axvline(1965, color='black')
+plt.title('Coefficient of Variation', loc='left', fontweight='bold')
+plt.ylabel('Percent')
+plt.grid(axis='x')
+plt.subplot(4, 1, 4)
+plt.plot(vista_plot['SP_ROC']*100)
+plt.axvline(1961, color='black')
+plt.title('Spring Recession Rate of Change', loc='left', fontweight='bold')
+plt.ylabel('Percent')
+# plt.gca().xaxis.grid(True)
+plt.grid(axis='x')
+plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.5, hspace=0.5)
+plt.show()
+pdb.set_trace()
+
+# use breakpoints vals to draw vline on each plot
