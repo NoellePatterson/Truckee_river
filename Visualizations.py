@@ -238,4 +238,33 @@ def posterior_density():
     plt.savefig('data_outputs/density_plots/density_n_'+ metric +'.jpeg', dpi=300)
     # pdb.set_trace()
     return
-outout = posterior_density()
+# outout = posterior_density()
+
+def func_flow_hydro(vista):
+    # pull out water year from vista to plot (try 2006, maybe 1995?)
+    plt_yr = vista['2006']
+    plt_yr = pd.to_numeric(plt_yr, errors='coerce').divide(35.3147)
+    plt.rc('ytick', labelsize=14) 
+    plt.figure(figsize=(10,3))
+    
+    plt.plot(plt_yr, color = 'C0', linestyle = '-')
+    
+    fall = plt_yr[55:68]
+    wet = plt_yr[75:232]
+    peak = plt_yr[90:99]
+    spring = plt_yr[232:295]
+    dry = plt_yr[295:365]
+    dry2 = plt_yr[0:55]
+    plt.plot(fall, color='#FBB117', linestyle = '-', linewidth=2)
+    plt.plot(wet, color='#3895D3', linestyle = '-', linewidth=2)
+    plt.plot(peak, color='#072F5F', linestyle = '-', linewidth=2) 
+    plt.plot(spring, color='#249225', linestyle = '-', linewidth=2)
+    plt.plot(dry, color='#cc1100', linestyle = '-', linewidth=2)
+    plt.plot(dry2, color='#cc1100', linestyle = '-', linewidth=2)
+    plt.savefig("data_outputs/hydro_rainbow.png", dpi=1200, transparent=True)
+    # find ff component segments from annual hydrograph, make subsets
+    # plot base layer of grey line
+    # plot over with color-coded ff components
+    # save w transparent background, plt.savefig("filename.png", transparent=True)
+    return
+# output = func_flow_hydro(vista)
