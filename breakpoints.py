@@ -55,10 +55,22 @@ blw_derby_output = pd.DataFrame(list(zip(breakpoint_yrs, breakpoint_mag)), colum
 vista_plot = vista_upstream_ffc.iloc[23:]
 derby_plot = derby_downstream_ffc.iloc[12:]
 
+# fill gaps in DG mag for plotting
+derby_flow = pd.read_csv('data_inputs/streamflow/ffc_outputs/Blw_derby_annual_flow_matrix.csv')
+derby_flow = derby_flow.iloc[:,12:]
+derby_flow = derby_flow.apply(pd.to_numeric, errors='coerce')
+ds_mag_plot = derby_plot['DS_Mag_50']
+# loop through DS mag output, which should have same index as flox matrix columns
+for index, val in enumerate(ds_mag_plot):
+    if np.isnan(val) == True:
+        dry_val = np.nanmean(derby_flow.iloc[276:366,index])
+        ds_mag_plot.iloc[index] = dry_val
+
 # Create paneled figure
 plt.style.use('seaborn-white')
+plt.figure(figsize=(8,6))
 plt.subplot(4, 1, 1)
-plt.plot(derby_plot['DS_Mag_50']*0.0283168) # convert to cms
+plt.plot(ds_mag_plot*0.0283168) # convert to cms
 plt.axvline(1972, color='black', label = 'regime shift')
 plt.title('Dry Season Median Magnitude', loc='left', fontweight='bold')
 plt.ylabel('Streamflow (cms)')
@@ -83,6 +95,7 @@ plt.ylabel('Percent')
 # plt.gca().xaxis.grid(True)
 plt.grid(axis='x')
 plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.5, hspace=0.5)
+plt.savefig('data_outputs/flow_breakpoints.png', dpi=1200)
 plt.show()
 pdb.set_trace()
 

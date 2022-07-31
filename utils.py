@@ -87,12 +87,19 @@ def prism_annual_vals():
     for index, row in prism_monthly.iterrows():
         if row['month'] == 6 or row['month'] == 7 or row['month'] == 8:
             summer_temps[str(int(row['year']))].append(row['tmax (degrees C)'])
+    for index, row in prism_monthly.iterrows():
+        if row['month'] == 6 or row['month'] == 7 or row['month'] == 8:
+            precip_cum[str(int(row['year']))].append(row['tmax (degrees C)'])
+    pdb.set_trace()
+    for key in precip_cum.keys():
+        precip_cum[key] = sum(precip_cum[key])
+    pdb.set_trace()
     summer_output = []
     for year in years:
         summer_output.append(np.nanmean(summer_temps[str(int(year))]))
     summer_output = pd.DataFrame(list(zip(years,summer_output,)),columns =['year','summer_max_temp'])
     # summer_output.to_csv('data_inputs/prism_summer_temps.csv', index=False)
-    
+    pdb.set_trace()
     # populate annual temp dict with monthly data based on water years
     for index, row in prism_monthly.iterrows():
         if row['month'] == 10 or row['month'] == 11 or row['month'] == 12: # start indexing at 10 for Oct-start water year
@@ -192,6 +199,7 @@ def huge_format():
     vpd = pd.read_csv('data_inputs/annual_max_vpd.csv')
     mean_t = pd.read_csv('data_inputs/annual_mean_temp.csv')
     precip = pd.read_csv('data_inputs/annual_precip.csv')
+    spring_precip = pd.read_csv('data_inputs/spring_precip.csv')
     # try a model version with spring-based input climate data
     # spring_vpd = pd.read_csv('data_inputs/spring_max_vpd.csv')
     # spring_t = pd.read_csv('data_inputs/prism_spring_temps.csv')
@@ -209,6 +217,7 @@ def huge_format():
     # prism_df = pd.merge(prism_df, spring_precip, on='year')
     prism_df = pd.merge(vpd, mean_t, on='year')
     prism_df = pd.merge(prism_df, precip, on='year')
+    prism_df = pd.merge(prism_df, spring_precip, on='year')
     prism_df = pd.merge(prism_df, pdo, on='year')
 
     # Create variable for regulation period: pre/post 1973 for upstream sites, pre/post 1982 for downstream sites
@@ -217,7 +226,7 @@ def huge_format():
     # Create a bunch of lists to fill iteratively with needed data
     meta_cols = tree_metadata.columns.tolist()
     flow_cols = ffc_blw_derby.columns.tolist()
-    prism_cols = ['annual_max_vpd', 'annual_mean_temp', 'annual_precip', 'pdo']
+    prism_cols = ['annual_max_vpd', 'annual_mean_temp', 'annual_precip', 'spring_precip', 'pdo']
     # prism_cols = ['spring_max_vpd', 'spring_mean_temp', 'spring_precip']
     columns = ['bai', 'year'] + meta_cols + ['regulation'] + prism_cols + flow_cols
     bai_ls = []
@@ -232,6 +241,7 @@ def huge_format():
     annual_max_vpd_ls  = []
     annual_mean_temp_ls  = []
     annual_precip_ls  = []
+    spring_precip_ls  = []
     pdo_ls = []
     fa_mag_ls = []
     fa_tim_ls = []
@@ -324,11 +334,12 @@ def huge_format():
                 annual_max_vpd_ls.append(prism_df['annual_max_vpd'][prism_index]) 
                 annual_mean_temp_ls.append(prism_df['annual_mean_temp'][prism_index]) 
                 annual_precip_ls.append(prism_df['annual_precip'][prism_index]) 
+                spring_precip_ls.append(prism_df['spring_precip'][prism_index]) 
                 pdo_ls.append(prism_df['pdo'][prism_index])
        
 
     zipped_ls = list(zip(bai_ls, year_ls, tree_id_ls, site_id_ls, lat_ls, lon_ls, sex_ls, to_river_ls, regulation, annual_max_vpd_ls,
-    annual_mean_temp_ls, annual_precip_ls, pdo_ls, fa_mag_ls, fa_tim_ls, wet_BFL_Mag_50_ls, wet_Tim_ls, wet_BFL_Dur_ls, peak_mag_ls, sp_Mag_ls,
+    annual_mean_temp_ls, annual_precip_ls, spring_precip_ls, pdo_ls, fa_mag_ls, fa_tim_ls, wet_BFL_Mag_50_ls, wet_Tim_ls, wet_BFL_Dur_ls, peak_mag_ls, sp_Mag_ls,
     sp_Tim_ls, sp_Dur_ls, sp_ROC_ls, ds_Mag_50_ls, ds_Mag_90_ls, ds_Tim_ls, ds_Dur_WS_ls, avg_ls, cv_ls))
     huge_df = pd.DataFrame(zipped_ls, columns=columns)
     huge_df.to_csv('data_outputs/all_model_data.csv')

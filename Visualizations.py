@@ -1,7 +1,9 @@
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 import re
 import seaborn as sns
+from matplotlib import gridspec
 import pdb
 
 # plot overlaid years from two different usgs gages
@@ -68,8 +70,59 @@ def q_precip_plot():
     ax1.set_xticks([0, 10, 20, 30, 40, 50, 60])
     ax1.set_xticklabels(['1960','1970','1980','1990', '2000', '2010', '2020'], fontsize=12)
     ax2.legend(loc='upper left', fontsize=12)
+    
     return
 # plot  = q_precip_plot()  
+
+def climate_plot():
+    # try a second version of climate plot with three facets including temperature
+    temp = pd.read_csv('data_inputs/annual_mean_temp.csv')
+    precip = pd.read_csv('data_inputs/annual_precip.csv')
+    downstream = pd.read_csv('data_inputs/streamflow/ffc_outputs/Blw_derby_supplementary_metrics.csv')
+    upstream = pd.read_csv('data_inputs/streamflow/ffc_outputs/vista_supplementary_metrics.csv')
+    # Align all data inputs, try 1950 as starting date
+    upstream_avg = upstream.iloc[0,:][44:]
+    upstream_avg = pd.to_numeric(upstream_avg, errors='coerce')
+    upstream_avg = upstream_avg.divide(35.3147)
+    downstream_avg = downstream.iloc[0,:][33:]
+    downstream_avg = pd.to_numeric(downstream_avg, errors='coerce')
+    downstream_avg = downstream_avg.divide(35.3147)
+
+    precip = precip.set_index('year')
+    temp = temp.set_index('year')
+    precip = precip.iloc[54:]
+    temp = temp.iloc[54:]
+    downstream_avg.index = precip.index
+    upstream_avg.index = precip.index
+    plot_df =  pd.merge(precip, temp, left_index=True, right_index=True)
+    plot_df2 = pd.merge(upstream_avg, downstream_avg, left_index=True, right_index=True)
+    plot_df = pd.merge(plot_df, plot_df2,  left_index=True, right_index=True)
+    plot_df.columns = ['annual_precip', 'annual_temp', 'upstream', 'downstream']
+    # stacked plots
+    fig = plt.figure(figsize=(8,6))
+    # set height ratios for subplots
+    gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1])
+    # the first subplot
+    ax0 = plt.subplot(gs[0])
+    # log scale for axis Y of the first subplot
+    line0, = ax0.plot(plot_df['annual_temp'], color='r', label='Annual mean temperature')
+    ax1 = plt.subplot(gs[1], sharex = ax0)
+    ax2 = ax1.twinx()
+    ax1.bar(precip.index, precip['annual_precip'], color='#bfe6ff', alpha=0.75)
+    line1, = ax2.plot(plot_df['upstream'], linestyle='-', color='blue', label='Upstream flow')
+    line2, = ax2.plot(plot_df['downstream'], linestyle='-', color='purple', label='Downstream flow')
+    plt.setp(ax0.get_xticklabels(), visible=False)
+    yticks = ax1.yaxis.get_major_ticks()
+    yticks[-1].label1.set_visible(False)
+    ax0.set_ylabel('Temperature ($^\circ$C)', fontsize=12)
+    ax1.set_ylabel('Precipitation (mm)', fontsize=12)
+    ax2.set_ylabel('Flow (cms)', fontsize=12)
+    ax2.legend(loc='upper right', fontsize=12)
+    ax0.legend(loc='upper left', fontsize=12)
+    plt.savefig('data_outputs/climate.png', dpi=1200)
+    pdb.set_trace()
+    return
+output = climate_plot()
 
 def bai_plot():
     #import bai lines, new csv
@@ -108,15 +161,16 @@ def r102_plot():
     isotopes = isotopes.drop(['N', 'Rpooled', 'MRW'], axis=1)
     isotopes = isotopes.dropna()
     isotopes = isotopes.set_index('Year')
-    r2 = abs(isotopes['R2'])
-    r16 = abs(isotopes['R16'])
+    r2 = isotopes['R2']
+    r16 = isotopes['R16']
     plt.rcParams.update({'font.size': 16})
-    plt.subplot(1,1,1)
-    plt.plot(r2, color='red', label='farther from channel', linewidth=2)
-    plt.plot(r16, color='orange', label='near channel', linewidth=2)
+    plt.subplots(figsize=(9,4))
+    plt.plot(r2, color='#301934', label='farther from channel', linewidth=2)
+    plt.plot(r16, color='#62baac', label='near channel', linewidth=2)
     plt.axvline(1982, color='black', linestyle='dotted')
     plt.legend()
-    plt.ylabel(r'$\delta^{13}$'+'C% (absolute values)')
+    plt.ylabel(r'$\Delta^{13}$'+'C (%)')
+    plt.savefig('data_outputs/R102_isotopes.png', dpi=1200)
     plt.show()
     return 
 # plot = r102_plot()
@@ -125,17 +179,22 @@ def n_plot():
     plot_d = pd.read_csv('data_inputs/N_plotting.csv')
     plot_d = plot_d.set_index('Year')
     n_bai = plot_d['N_bai_pooled']
-    n_iso = plot_d['N_abs']
+    n_iso = plot_d['N_DC13']
+    plt.rcParams.update({'font.size': 16})
     fig,ax = plt.subplots(figsize=(12,4))
-    ax.plot(n_bai, color='red', label='Basal area increment')
-    ax.set_ylabel('Basal area '+ r'$(mm^2)$')
-    ax.legend(loc=2)
+    ax.plot(n_bai, color='#301934', label='Basal area increment')
+    ax.set_ylabel('Basal area increment '+ r'$(mm^2)$')
+    ax.set_ylim(0,17500)
+    ax.legend(loc=1)
     ax2 = ax.twinx()
-    ax2.plot(n_iso, color='blue', label=r'$\delta^{13}$'+'C % (absolute value)')
-    ax2.set_ylabel(r'$\delta^{13}$'+'C (%)')
+    ax2.plot(n_iso, color='#62baac', label=r'$\Delta^{13}$'+'C %')
+    ax2.set_ylim(18, 22)
+    ax2.set_ylabel(r'$\Delta^{13}$'+'C (%)')
     plt.axvline(1973, color='black', linestyle='dotted')
-    ax2.legend(loc=1)
+    ax2.legend(loc=2)
+    plt.savefig('data_outputs/n_plot.png', dpi=1200)
     plt.show()
+    
 # plot = n_plot()
 
 def model_sig():
@@ -153,7 +212,7 @@ def model_sig():
 
 def posterior_density():
     # bring in mcmc csv's
-    mcmc = pd.read_csv('data_inputs/mcmc_samples_dry.csv', index_col=0)
+    mcmc = pd.read_csv('data_inputs/model_outputs/mcmc_samples/mcmc_samples_all_params.csv', index_col=0)
 
     # decide which params to plot. May need to average some cols. start w avg annual Q by reg, for downstream sites (avg'd?)
     mcmc_cols = mcmc.columns
@@ -167,12 +226,14 @@ def posterior_density():
     n_avg_post = []
     r_avg_pre = []
     r_avg_post = []
-    metric = 'bdm50'
+    metric = 'bprecip'
     for mc_col in mcmc_cols:
         # make col number an int
-        nums = re.findall(r'\d+', mc_col)[1:3] # [1:3] for dry season only
+        nums = re.findall(r'\d+', mc_col)#[1:3] # [1:3] for dry season only
         name = re.findall('[a-z]+', mc_col)
-        name = [mc_col[0:5]] # for dry season only
+
+        # name = [mc_col[0:5]] # for dry season only
+
         if name[0] == metric:
             if int(nums[0]) < 11: # bb indices
                 if int(nums[1]) == 1:
@@ -211,32 +272,46 @@ def posterior_density():
     r_avg_pre = pd.concat(r_avg_pre, axis=0).to_frame()
     r_avg_post = pd.concat(r_avg_post, axis=0).to_frame()
 
+    plt.rcParams.update({'font.size': 14})
     
-    # plot_df = pd.concat([bb_avg_pre, bb_avg_post, n_avg_pre, n_avg_post], axis=0)
-    # plot_df.columns = ['param', 'label']
-    # pdb.set_trace()
-    # plot density plts
-    # fig = sns.distplot(plot_df, x='param', hue='label', fill=True, kind='kde')
-    def plotter(data, d_label):
+    def plotter(data, d_label, color):
         sns.distplot(data, hist = False, kde = True,
                     kde_kws = {'shade': True, 'linewidth': 2}, 
-                    label = d_label)
-    # plot_inputs = [[bb_avg_pre, 'Site #4 1973-2019'], [mre_avg_pre, 'Site #2 1973-2019'], [mrw_avg_pre, 'Site #1 1973-2019'],
-    # [n_avg_pre, 'Site #5 1973-2019'], [r_avg_pre, 'Site #3 1973-2019']]
-    plot_inputs = [[n_avg_pre, 'Site #5 1918?-1973'], [n_avg_post, 'Site #5 1973-2019']]
+                    label = d_label,
+                    color=color)
+    # plot_inputs = [[bb_avg_pre, 'Historic (1918-1972)', '#663399'], [bb_avg_post, 'Modern (1973-2019)','#62baac']]
+    plot_inputs = [[mrw_avg_pre, 'Site #1', '#62baac'],[mre_avg_pre, 'Site #2','#005248'],[r_avg_pre, 'Site #3','#A9A9A9'],[bb_avg_pre, 'Site #4', '#cf92ff'],[n_avg_pre, 'Site #5', '#663399']]
     for input in plot_inputs:
-        plotter(input[0], input[1])
+        plotter(input[0], input[1], input[2])
 
-    # plt.legend(prop={'size': 10}, loc='upper right')
+    plt.legend(prop={'size': 11}, loc='upper right')
     # plt.figure(figsize=(8,6))
-    plt.title(metric)
+    # plt.title(metric)
+    plt.title('Precipitation: Historic (1918-1972)', fontsize=13)
     plt.xlabel('Coefficient value')
     plt.ylabel('Posterior density')
-    # fig = sns.displot(bb_avg_pre, kind='kde', fill=True)
-    # fig = sns.displot(bb_avg_post, kind='kde', fill=True)
+    plt.yticks(np.arange(0, 4, 0.5))
+    plt.xlim((-1.5,1.5))
     # plt.show()
-    plt.savefig('data_outputs/density_plots/density_n_'+ metric +'.jpeg', dpi=300)
-    # pdb.set_trace()
+    plt.savefig('data_outputs/density_plots/density_pre_'+ metric +'.jpeg', dpi=1200)
+
+    plt.clf()
+    fig, ax = plt.subplots()
+    # plot_inputs = [[n_avg_pre, 'Historic (1918-1972)', '#663399'], [n_avg_post, 'Modern (1973-2019)', '#62baac']]
+    plot_inputs = [[mrw_avg_post, 'Site #1', '#62baac'],[mre_avg_post, 'Site #2','#005248'],[r_avg_post, 'Site #3','#A9A9A9'],[bb_avg_post, 'Site #4', '#cf92ff'],[n_avg_post, 'Site #5', '#663399']]
+    for input in plot_inputs:
+        plotter(input[0], input[1], input[2])
+
+    plt.legend(prop={'size': 11}, loc='upper right')
+    # plt.figure(figsize=(8,6))
+    # plt.title(metric)
+    plt.title('Precipitation: Modern (1973-2019)', fontsize=13)
+    plt.xlabel('Coefficient value')
+    plt.ylabel('Posterior density')
+    plt.yticks(np.arange(0, 3, 0.5))
+    # plt.show()
+    plt.savefig('data_outputs/density_plots/density_post_'+ metric +'.jpeg', dpi=1200)
+    # # pdb.set_trace()
     return
 # outout = posterior_density()
 
@@ -245,7 +320,7 @@ def func_flow_hydro(vista):
     plt_yr = vista['2006']
     plt_yr = pd.to_numeric(plt_yr, errors='coerce').divide(35.3147)
     plt.rc('ytick', labelsize=14) 
-    plt.figure(figsize=(10,3))
+    plt.figure(figsize=(10,2))
     
     plt.plot(plt_yr, color = 'C0', linestyle = '-')
     
@@ -262,9 +337,22 @@ def func_flow_hydro(vista):
     plt.plot(dry, color='#cc1100', linestyle = '-', linewidth=2)
     plt.plot(dry2, color='#cc1100', linestyle = '-', linewidth=2)
     plt.savefig("data_outputs/hydro_rainbow.png", dpi=1200, transparent=True)
-    # find ff component segments from annual hydrograph, make subsets
-    # plot base layer of grey line
-    # plot over with color-coded ff components
-    # save w transparent background, plt.savefig("filename.png", transparent=True)
+
+    plt.clf()
+    plt.figure(figsize=(10,6))
+    vista_25 = []
+    vista_50 = []
+    vista_75 = []
+    for row_index, value in enumerate(vista.iloc[:,0]): # loop through each row, 366 total
+        data = pd.to_numeric(vista.iloc[row_index, :], errors='coerce')
+        vista_25.append(np.nanpercentile(data, 25))
+        vista_50.append(np.nanpercentile(data, 50))
+        vista_75.append(np.nanpercentile(data, 75))
+    # Try with full POR and color coding...
+    plt.plot(vista_50, color='#072F5F', linestyle = '-', linewidth=2) 
+    x = np.arange(0, 366, 1)
+    plt.fill_between(x, vista_25, vista_50, color='#3895D3', alpha=.5)
+    plt.fill_between(x, vista_50, vista_75, color='#3895D3', alpha=.5)
+    plt.savefig("data_outputs/vista_rh.png", dpi=1200, transparent=True)
     return
 # output = func_flow_hydro(vista)
