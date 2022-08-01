@@ -4,6 +4,8 @@ import numpy as np
 import re
 import seaborn as sns
 from matplotlib import gridspec
+from sklearn import preprocessing
+import glob
 import pdb
 
 # plot overlaid years from two different usgs gages
@@ -122,39 +124,63 @@ def climate_plot():
     plt.savefig('data_outputs/climate.png', dpi=1200)
     pdb.set_trace()
     return
-output = climate_plot()
+# output = climate_plot()
 
 def bai_plot():
     #import bai lines, new csv
     precip = pd.read_csv('data_inputs/annual_precip.csv')
     precip = precip.set_index('year')
-    precip = precip.iloc[49:]
+    precip = precip.iloc[34:]
 
     all_sites = pd.read_csv('data_inputs/site_avg_bai/All_bai_site_avg.csv')
-    all_sites = all_sites.set_index('year')
-    # constrain years to 1945-2019 for DS
-    all_sites = all_sites.iloc[48:]
-    us_plot = pd.to_numeric(all_sites['mrw_r_avg'], errors='coerce')
-    us_plot = us_plot.iloc[18:] # cut off until 1963 bc of lack of enough data
-    ds_plot = pd.to_numeric(all_sites['DS_avg'], errors='coerce')
+    # Try this with standardized tree growth instead
+    bai_dict = {}    
+    raw_sites = glob.glob('data_inputs/all_trees_bai/*.csv')
+    for site in raw_sites:
+        data = pd.read_csv(site)
+        data = data.set_index('year')
+        name = site.split('/')[2][:-4]
+        bai_dict[name] = data
+    bai_dict['MRW_bai'] = bai_dict['MRW_bai'].drop('MRW_isotopes', axis=1)
+    bai_dict['R_bai'] = bai_dict['R_bai'].drop('R_isotopes', axis=1)
+    bai_dict['N_bai'] = bai_dict['N_bai'].drop('N_isotopes', axis=1)
+
+    def standardize(col):
+        col_mean = np.nanmean(col)
+        sd = np.nanstd(col)
+        return (col-col_mean)/sd
+
+    for site in bai_dict.keys():
+        # check if you can do an apply function to every row to standardize instead of a dumb loop
+        bai_dict[site] = bai_dict[site].apply(standardize)
+        bai_dict[site] = bai_dict[site].mean(axis=1)
+        bai_dict[site].name = site
+    
+    # take average of upstream and downstream sites
+    upstream = pd.merge(bai_dict['MRW_bai'], bai_dict['MRE_bai'], how='left',  left_index=True, right_index=True)
+    upstream = pd.merge(upstream, bai_dict['R_bai'], how='left', left_index=True, right_index=True)
+    downstream = pd.merge(bai_dict['N_bai'], bai_dict['BB_bai'], how='left', left_index=True, right_index=True)
+    upstream = upstream.mean(axis=1)
+    downstream = downstream.mean(axis=1)  
+
     #make pretty, label, output
-    fig, ax1 = plt.subplots()
+    fig, ax1 = plt.subplots(figsize=(9,4))
     ax1.bar(precip.index, precip['annual_precip'], color='#bfe6ff', alpha=0.75, label='Annual precipitation')
-    ax1.set_ylabel('Annual precipitation, mm')
+    ax1.set_ylabel('Annual precipitation (mm)')
     ax2 = ax1.twinx()   
-    ax2.plot(ds_plot, linestyle='-', color='#CC5801', label='Downstream sites', linewidth='3')
-    ax2.plot(us_plot, linestyle='-', color='C0', label='Upstream sites', linewidth='3')
-    ax2.set_ylabel('Basal area increment '+ r'$(mm^2)$')
-    ax2.set_ylim(bottom=2000, top=11000)
+    ax2.plot(downstream[33:], linestyle='-', color='purple', label='Downstream sites', linewidth='2.5')
+    ax2.plot(upstream, linestyle='-', color='blue', label='Upstream sites', linewidth='2.5')
+    ax2.set_ylabel('Basal area increment, standardized')
     lines_1, labels_1 = ax1.get_legend_handles_labels()
     lines_2, labels_2 = ax2.get_legend_handles_labels()
     lines = lines_1 + lines_2
     labels = labels_1 + labels_2
     
     ax1.legend(lines, labels, loc='upper left')
+    plt.savefig('data_outputs/bai_allsites.png', dpi=1200)
     plt.show()
     return
-# output = bai_plot()
+output = bai_plot()
 
 def r102_plot():
     isotopes = pd.read_csv('data_inputs/isotopes.csv')
