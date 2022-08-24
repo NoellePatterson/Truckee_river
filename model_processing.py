@@ -119,6 +119,5 @@ for key in models_dict:
         # Build output table: convert counts into percentages
         all_outputs.append([metric_name, pre_sig, post_sig, data_subsets[1][1], data_subsets[2][1], data_subsets[4][1], data_subsets[0][1], data_subsets[3][1], data_subsets[6][1], data_subsets[7][1], data_subsets[9][1], data_subsets[5][1], data_subsets[8][1]])
     df = pd.DataFrame(all_outputs, columns=['metric', 'pre_sig', 'post_sig', 'mre_pre_sig_19', 'mrw_pre_sig_19', 'r_pre_sig_14', 'bb_pre_sig_10', 'n_pre_sig_20', 'mre_post_sig_19', 'mrw_post_sig_19', 'r_post_sig_14', 'bb_post_sig_10', 'n_post_sig_20'])
-    df.to_csv('data_outputs/Bayes_model_summaries/bayes_model_siteprepost_summary'+key+'_7_20.csv')
-
+    df.to_csv('data_outputs/Bayes_model_summaries/bayes_model_siteprepost_summary'+key+'_8_09.csv')
 

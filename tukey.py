@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_style("white")
 import matplotlib.ticker as ticker
+import plotly.graph_objects as go
 
 # import all relevant datasets from csv
 isotopes = pd.read_csv('data_inputs/isotopes.csv')
@@ -61,26 +62,26 @@ results_df.to_csv('data_outputs/Tukey_hsd_alltrees.csv')
 # make bar plot of results.
 # bar_data = pd.read_csv('data_inputs/tukey_bar_plot.csv') 
 names = ['Upstream', 'Downstream']
-inc = np.array([8, 10])
-dec = np.array([2, 1])
-no_change = np.array([6, 3])
+inc_bai = np.array([8, 10])
+dec_bai = np.array([2, 1])
+no_change_bai = np.array([6, 3])
+inc_c13 = np.array([-1,-1]) # represent c13 with neg values so it plots on other side of x-axis
+dec_c13 = np.array([-1,0])
 plt.rcParams.update({'font.size': 16})
 fig, ax = plt.subplots(figsize=(7,6))
 for axis in [ax.xaxis, ax.yaxis]:
     axis.set_major_locator(ticker.MaxNLocator(integer=True))
 
-ax.bar(names, inc, color='green')
-ax.bar(names, dec, bottom=inc, color='#AB784E')
-ax.bar(names, no_change, bottom=inc+dec, color='grey')
-ax.legend(['increasing', 'decreasing', 'no change'], fontsize=11)
+ax.bar(names, inc_bai, color='green', label='increasing')
+ax.bar(names, dec_bai, bottom=inc_bai, color='#AB784E', label='decreasing')
+ax.bar(names, no_change_bai, bottom=inc_bai+dec_bai, color='grey', label='no change')
+ax.bar(names, inc_c13, color='green', edgecolor='black', hatch='/')
+ax.bar(names, dec_c13, bottom=inc_c13, color='#AB784E', edgecolor='black', hatch='/')
+plt.axhline(y=0, color='black')
+ax.legend(fontsize=11)
 plt.ylabel('Number of trees')
 fig.tight_layout() 
-plt.savefig('data_outputs/tukey_growth.jpeg', dpi=1200)
+plt.savefig('data_outputs/tukey_growth_test.jpeg', dpi=1200)
 pdb.set_trace()
-    
-                          
-                          
 
-    
-
-
+                        

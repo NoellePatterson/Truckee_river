@@ -180,7 +180,7 @@ def bai_plot():
     plt.savefig('data_outputs/bai_allsites.png', dpi=1200)
     plt.show()
     return
-output = bai_plot()
+# output = bai_plot()
 
 def r102_plot():
     isotopes = pd.read_csv('data_inputs/isotopes.csv')
@@ -252,7 +252,7 @@ def posterior_density():
     n_avg_post = []
     r_avg_pre = []
     r_avg_post = []
-    metric = 'bprecip'
+    metric = 'bsr' # dry is bdm50
     for mc_col in mcmc_cols:
         # make col number an int
         nums = re.findall(r'\d+', mc_col)#[1:3] # [1:3] for dry season only
@@ -306,40 +306,44 @@ def posterior_density():
                     label = d_label,
                     color=color)
     # plot_inputs = [[bb_avg_pre, 'Historic (1918-1972)', '#663399'], [bb_avg_post, 'Modern (1973-2019)','#62baac']]
-    plot_inputs = [[mrw_avg_pre, 'Site #1', '#62baac'],[mre_avg_pre, 'Site #2','#005248'],[r_avg_pre, 'Site #3','#A9A9A9'],[bb_avg_pre, 'Site #4', '#cf92ff'],[n_avg_pre, 'Site #5', '#663399']]
+
+    plot_inputs = [[mrw_avg_pre, 'US-1', '#62baac'],[mre_avg_pre, 'US-2','#005248'],[r_avg_pre, 'US-3','#A9A9A9'],[bb_avg_pre, 'DS-1', '#cf92ff'],[n_avg_pre, 'DS-2', '#663399']]
     for input in plot_inputs:
         plotter(input[0], input[1], input[2])
 
     plt.legend(prop={'size': 11}, loc='upper right')
     # plt.figure(figsize=(8,6))
     # plt.title(metric)
-    plt.title('Precipitation: Historic (1918-1972)', fontsize=13)
+    plt.title('Spring Recession Rate of Change: Historic (1918-1973)', fontsize=13)
     plt.xlabel('Coefficient value')
     plt.ylabel('Posterior density')
-    plt.yticks(np.arange(0, 4, 0.5))
+    plt.yticks(np.arange(0, 4.5, 0.5))
     plt.xlim((-1.5,1.5))
+    plt.axvline(x=0, linestyle='--', color='black', linewidth='0.5')
     # plt.show()
     plt.savefig('data_outputs/density_plots/density_pre_'+ metric +'.jpeg', dpi=1200)
-
+    
     plt.clf()
     fig, ax = plt.subplots()
     # plot_inputs = [[n_avg_pre, 'Historic (1918-1972)', '#663399'], [n_avg_post, 'Modern (1973-2019)', '#62baac']]
-    plot_inputs = [[mrw_avg_post, 'Site #1', '#62baac'],[mre_avg_post, 'Site #2','#005248'],[r_avg_post, 'Site #3','#A9A9A9'],[bb_avg_post, 'Site #4', '#cf92ff'],[n_avg_post, 'Site #5', '#663399']]
+    plot_inputs = [[mrw_avg_post, 'US-1', '#62baac'],[mre_avg_post, 'US-2','#005248'],[r_avg_post, 'US-3','#A9A9A9'],[bb_avg_post, 'DS-1', '#cf92ff'],[n_avg_post, 'DS-2', '#663399']]
     for input in plot_inputs:
         plotter(input[0], input[1], input[2])
 
     plt.legend(prop={'size': 11}, loc='upper right')
     # plt.figure(figsize=(8,6))
     # plt.title(metric)
-    plt.title('Precipitation: Modern (1973-2019)', fontsize=13)
+    plt.title('Spring Recession Rate of Change: Modern (1973-2019)', fontsize=13)
     plt.xlabel('Coefficient value')
     plt.ylabel('Posterior density')
-    plt.yticks(np.arange(0, 3, 0.5))
+    plt.yticks(np.arange(0, 4.5, 0.5))
+    plt.xlim((-1.5,1.5))
+    plt.axvline(x=0, linestyle='--', color='black', linewidth='0.5')
     # plt.show()
     plt.savefig('data_outputs/density_plots/density_post_'+ metric +'.jpeg', dpi=1200)
     # # pdb.set_trace()
     return
-# outout = posterior_density()
+outout = posterior_density()
 
 def func_flow_hydro(vista):
     # pull out water year from vista to plot (try 2006, maybe 1995?)
