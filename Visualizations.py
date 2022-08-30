@@ -238,7 +238,7 @@ def model_sig():
 
 def posterior_density():
     # bring in mcmc csv's
-    mcmc = pd.read_csv('data_inputs/model_outputs/mcmc_samples/mcmc_samples_all_params.csv', index_col=0)
+    mcmc = pd.read_csv('data_inputs/model_outputs/mcmc_samples/mcmc_samples_all_params_sp_precip.csv', index_col=0)
 
     # decide which params to plot. May need to average some cols. start w avg annual Q by reg, for downstream sites (avg'd?)
     mcmc_cols = mcmc.columns
@@ -252,7 +252,7 @@ def posterior_density():
     n_avg_post = []
     r_avg_pre = []
     r_avg_post = []
-    metric = 'bsr' # dry is bdm50
+    metric = 'bprecip' # dry is bdm50
     for mc_col in mcmc_cols:
         # make col number an int
         nums = re.findall(r'\d+', mc_col)#[1:3] # [1:3] for dry season only
@@ -305,42 +305,42 @@ def posterior_density():
                     kde_kws = {'shade': True, 'linewidth': 2}, 
                     label = d_label,
                     color=color)
-    # plot_inputs = [[bb_avg_pre, 'Historic (1918-1972)', '#663399'], [bb_avg_post, 'Modern (1973-2019)','#62baac']]
+    plot_inputs = [[bb_avg_pre, 'Historic (1918-1972)', '#663399'], [bb_avg_post, 'Modern (1973-2019)','#62baac']]
 
-    plot_inputs = [[mrw_avg_pre, 'US-1', '#62baac'],[mre_avg_pre, 'US-2','#005248'],[r_avg_pre, 'US-3','#A9A9A9'],[bb_avg_pre, 'DS-1', '#cf92ff'],[n_avg_pre, 'DS-2', '#663399']]
+    # plot_inputs = [[mrw_avg_pre, 'US-1', '#62baac'],[mre_avg_pre, 'US-2','#005248'],[r_avg_pre, 'US-3','#A9A9A9'],[bb_avg_pre, 'DS-1', '#cf92ff'],[n_avg_pre, 'DS-2', '#663399']]
     for input in plot_inputs:
         plotter(input[0], input[1], input[2])
 
     plt.legend(prop={'size': 11}, loc='upper right')
     # plt.figure(figsize=(8,6))
     # plt.title(metric)
-    plt.title('Spring Recession Rate of Change: Historic (1918-1973)', fontsize=13)
+    plt.title('Site DS-1: Growing Season Precipitation', fontsize=13) #Spring Recession Rate of Change: Historic (1918-1973), Site DS-1: Dry Season Median Magnitude
     plt.xlabel('Coefficient value')
     plt.ylabel('Posterior density')
     plt.yticks(np.arange(0, 4.5, 0.5))
     plt.xlim((-1.5,1.5))
     plt.axvline(x=0, linestyle='--', color='black', linewidth='0.5')
     # plt.show()
-    plt.savefig('data_outputs/density_plots/density_pre_'+ metric +'.jpeg', dpi=1200)
+    plt.savefig('data_outputs/density_plots/density_bb_prepost_'+ metric +'.jpeg', dpi=1200)
     
     plt.clf()
     fig, ax = plt.subplots()
-    # plot_inputs = [[n_avg_pre, 'Historic (1918-1972)', '#663399'], [n_avg_post, 'Modern (1973-2019)', '#62baac']]
-    plot_inputs = [[mrw_avg_post, 'US-1', '#62baac'],[mre_avg_post, 'US-2','#005248'],[r_avg_post, 'US-3','#A9A9A9'],[bb_avg_post, 'DS-1', '#cf92ff'],[n_avg_post, 'DS-2', '#663399']]
+    plot_inputs = [[n_avg_pre, 'Historic (1918-1972)', '#663399'], [n_avg_post, 'Modern (1973-2019)', '#62baac']]
+    # plot_inputs = [[mrw_avg_post, 'US-1', '#62baac'],[mre_avg_post, 'US-2','#005248'],[r_avg_post, 'US-3','#A9A9A9'],[bb_avg_post, 'DS-1', '#cf92ff'],[n_avg_post, 'DS-2', '#663399']]
     for input in plot_inputs:
         plotter(input[0], input[1], input[2])
 
     plt.legend(prop={'size': 11}, loc='upper right')
     # plt.figure(figsize=(8,6))
     # plt.title(metric)
-    plt.title('Spring Recession Rate of Change: Modern (1973-2019)', fontsize=13)
+    plt.title('Site DS-2: Growing Season Precipitation', fontsize=13)
     plt.xlabel('Coefficient value')
     plt.ylabel('Posterior density')
     plt.yticks(np.arange(0, 4.5, 0.5))
     plt.xlim((-1.5,1.5))
     plt.axvline(x=0, linestyle='--', color='black', linewidth='0.5')
     # plt.show()
-    plt.savefig('data_outputs/density_plots/density_post_'+ metric +'.jpeg', dpi=1200)
+    plt.savefig('data_outputs/density_plots/density_n_'+ metric +'.jpeg', dpi=1200)
     # # pdb.set_trace()
     return
 outout = posterior_density()

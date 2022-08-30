@@ -23,7 +23,8 @@ vista_upstream_ffc = vista_upstream_ffc.set_index('Year')
 # make loop function, 
 breakpoint_yrs = []
 breakpoint_mag = []
-metric_cols = vista_upstream_ffc.columns
+breakpoint_perc = []
+metric_cols = derby_downstream_ffc.columns
 window_len = 30
 for metric in metric_cols:
     data = np.array(vista_upstream_ffc[metric])[23:] # for vista, skip over many NAs 
@@ -39,14 +40,16 @@ for metric in metric_cols:
     year_index = breakpoint_results[breakpoint_results==final].index[0] + window_len #+23 for upstream
     year = vista_upstream_ffc.index[year_index + 23]
     breakpoint_yrs.append(year)
-    mag = (np.nanmean(data[year_index:]) - np.nanmean(data[:year_index]))/np.nanmean(data[:year_index])
+    perc = (np.nanmean(data[year_index:]) - np.nanmean(data[:year_index]))/np.nanmean(data[:year_index])
+    mag = np.nanmean(data[year_index:]) - np.nanmean(data[:year_index])
     breakpoint_mag.append(mag)
+    breakpoint_perc.append(perc)
     # if metric == 'SP_ROC':
     #     pdb.set_trace()
     # calc diff as a percentage
-blw_derby_output = pd.DataFrame(list(zip(breakpoint_yrs, breakpoint_mag)), columns=['years', 'percent diff'], index=metric_cols) 
-# blw_derby_output.to_csv('data_outputs/metric_diffs_vista.csv')
-# pdb.set_trace()
+blw_derby_output = pd.DataFrame(list(zip(breakpoint_yrs, breakpoint_mag, breakpoint_perc)), columns=['years', 'change mag', 'percent diff'], index=metric_cols) 
+blw_derby_output.to_csv('data_outputs/metric_diffs_blw_derby.csv')
+pdb.set_trace()
 
 # Make plot printout of notable breakpoints
 
@@ -68,7 +71,8 @@ for index, val in enumerate(ds_mag_plot):
 
 # Create paneled figure
 plt.style.use('seaborn-white')
-plt.figure(figsize=(8,6))
+plt.figure(figsize=(10,8))
+plt.subplots(ncols=1, nrows=4, sharex=True)
 plt.subplot(4, 1, 1)
 plt.plot(ds_mag_plot*0.0283168) # convert to cms
 plt.axvline(1972, color='black', label = 'regime shift')
@@ -87,6 +91,7 @@ plt.axvline(1965, color='black')
 plt.title('Coefficient of Variation', loc='left', fontweight='bold')
 plt.ylabel('Percent')
 plt.grid(axis='x')
+
 plt.subplot(4, 1, 4)
 plt.plot(vista_plot['SP_ROC']*100)
 plt.axvline(1961, color='black')
@@ -95,7 +100,7 @@ plt.ylabel('Percent')
 # plt.gca().xaxis.grid(True)
 plt.grid(axis='x')
 plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.5, hspace=0.5)
-plt.savefig('data_outputs/flow_breakpoints.png', dpi=1200)
+plt.savefig('data_outputs/flow_breakpoints_test.png', dpi=1200)
 plt.show()
 pdb.set_trace()
 
