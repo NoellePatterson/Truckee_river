@@ -27,7 +27,7 @@ breakpoint_perc = []
 metric_cols = derby_downstream_ffc.columns
 window_len = 30
 for metric in metric_cols:
-    data = np.array(vista_upstream_ffc[metric])[23:] # for vista, skip over many NAs 
+    data = np.array(derby_downstream_ffc[metric])#[23:] # for vista, skip over many NAs 
     breakpoint_results = pd.Series(np.nan, index=list(range(1,len(data)-(window_len*2)+1,1)))
     for index in range(len(data) - (window_len*2)):
         window1 = np.nanmean(data[index:index+window_len])
@@ -38,7 +38,8 @@ for metric in metric_cols:
     final = max(breakpoint_results)
 
     year_index = breakpoint_results[breakpoint_results==final].index[0] + window_len #+23 for upstream
-    year = vista_upstream_ffc.index[year_index + 23]
+    year = derby_downstream_ffc.index[year_index]
+    # year = vista_upstream_ffc.index[year_index + 23]
     breakpoint_yrs.append(year)
     perc = (np.nanmean(data[year_index:]) - np.nanmean(data[:year_index]))/np.nanmean(data[:year_index])
     mag = np.nanmean(data[year_index:]) - np.nanmean(data[:year_index])
@@ -76,18 +77,24 @@ plt.subplots(ncols=1, nrows=4, sharex=True)
 plt.subplot(4, 1, 1)
 plt.plot(ds_mag_plot*0.0283168) # convert to cms
 plt.axvline(1972, color='black', label = 'regime shift')
+plt.axvline(1973, color='grey', linestyle='--')
+plt.axvline(1982, color='grey', linestyle='--')
 plt.title('Dry Season Median Magnitude', loc='left', fontweight='bold')
-plt.ylabel('Streamflow (cms)')
+plt.ylabel('Flow (cms)')
 plt.grid(axis='x')
 plt.subplot(4, 1, 2)
 plt.plot(derby_plot['Avg']*0.0283168) # convert to cms
 plt.axvline(1970, color='black')
+plt.axvline(1973, color='grey', linestyle='--')
+plt.axvline(1982, color='grey', linestyle='--')
 plt.title('Average Annual Flow', loc='left', fontweight='bold')
-plt.ylabel('Streamflow (cms)')
+plt.ylabel('Flow (cms)')
 plt.grid(axis='x')
 plt.subplot(4, 1, 3)
 plt.plot(derby_plot['CV'])
 plt.axvline(1965, color='black')
+plt.axvline(1973, color='grey', linestyle='--')
+plt.axvline(1982, color='grey', linestyle='--')
 plt.title('Coefficient of Variation', loc='left', fontweight='bold')
 plt.ylabel('Percent')
 plt.grid(axis='x')
@@ -95,12 +102,15 @@ plt.grid(axis='x')
 plt.subplot(4, 1, 4)
 plt.plot(vista_plot['SP_ROC']*100)
 plt.axvline(1961, color='black')
-plt.title('Spring Recession Rate of Change', loc='left', fontweight='bold')
+plt.axvline(1973, color='grey', linestyle='--')
+plt.axvline(1982, color='grey', linestyle='--')
+plt.title('Spring Recession Rate-of-Change', loc='left', fontweight='bold')
 plt.ylabel('Percent')
 # plt.gca().xaxis.grid(True)
 plt.grid(axis='x')
+plt.xticks(range(1930, 2020, 10))
 plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.5, hspace=0.5)
-plt.savefig('data_outputs/flow_breakpoints_test.png', dpi=1200)
+plt.savefig('data_outputs/flow_breakpoints.png', dpi=1200)
 plt.show()
 pdb.set_trace()
 

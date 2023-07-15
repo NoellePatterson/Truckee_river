@@ -4,7 +4,6 @@ import numpy as np
 import re
 import seaborn as sns
 from matplotlib import gridspec
-from sklearn import preprocessing
 import glob
 import pdb
 
@@ -167,10 +166,11 @@ def bai_plot():
     fig, ax1 = plt.subplots(figsize=(9,4))
     ax1.bar(precip.index, precip['annual_precip'], color='#bfe6ff', alpha=0.75, label='Annual precipitation')
     ax1.set_ylabel('Annual precipitation (mm)')
-    ax2 = ax1.twinx()   
-    ax2.plot(downstream[33:], linestyle='-', color='purple', label='Downstream sites', linewidth='2.5')
+    ax2 = ax1.twinx() 
+    ax1.set_xticks(range(1930, 2040, 10))   
     ax2.plot(upstream, linestyle='-', color='blue', label='Upstream sites', linewidth='2.5')
-    ax2.set_ylabel('Basal area increment, standardized')
+    ax2.plot(downstream[33:], linestyle='-', color='purple', label='Downstream sites', linewidth='2.5')
+    ax2.set_ylabel('Basal area increment, standardized ('+r'$\%_o$'+')')
     lines_1, labels_1 = ax1.get_legend_handles_labels()
     lines_2, labels_2 = ax2.get_legend_handles_labels()
     lines = lines_1 + lines_2
@@ -195,11 +195,11 @@ def r102_plot():
     plt.plot(r16, color='#62baac', label='near channel', linewidth=2)
     plt.axvline(1982, color='black', linestyle='dotted')
     plt.legend()
-    plt.ylabel(r'$\Delta^{13}$'+'C (%)')
+    plt.ylabel(r'$\Delta^{13}$'+'C ('+r'$\%_o$'+')')
     plt.savefig('data_outputs/R102_isotopes.png', dpi=1200)
     plt.show()
     return 
-# plot = r102_plot()
+plot = r102_plot()
 
 def n_plot():
     plot_d = pd.read_csv('data_inputs/N_plotting.csv')
@@ -211,13 +211,14 @@ def n_plot():
     ax.plot(n_bai, color='#301934', label='Basal area increment')
     ax.set_ylabel('Basal area increment '+ r'$(mm^2)$')
     ax.set_ylim(0,17500)
-    ax.legend(loc=1)
+    ax.legend(loc=2)
     ax2 = ax.twinx()
-    ax2.plot(n_iso, color='#62baac', label=r'$\Delta^{13}$'+'C %')
+    ax2.plot(n_iso, color='#62baac', label=r'$\Delta^{13}$'+'C')
     ax2.set_ylim(18, 22)
-    ax2.set_ylabel(r'$\Delta^{13}$'+'C (%)')
+    ax2.set_ylabel(r'$\Delta^{13}$'+'C ('+r'$\%_o$'+')')
+    ax2.set_xticks(range(1930, 2030, 10))
     plt.axvline(1973, color='black', linestyle='dotted')
-    ax2.legend(loc=2)
+    ax2.legend(loc=1)
     plt.savefig('data_outputs/n_plot.png', dpi=1200)
     plt.show()
     
@@ -238,7 +239,7 @@ def model_sig():
 
 def posterior_density():
     # bring in mcmc csv's
-    mcmc = pd.read_csv('data_inputs/model_outputs/mcmc_samples/mcmc_samples_all_params_sp_precip.csv', index_col=0)
+    mcmc = pd.read_csv('data_inputs/model_outputs/all_params.csv', index_col=0)
 
     # decide which params to plot. May need to average some cols. start w avg annual Q by reg, for downstream sites (avg'd?)
     mcmc_cols = mcmc.columns
@@ -343,7 +344,47 @@ def posterior_density():
     plt.savefig('data_outputs/density_plots/density_n_'+ metric +'.jpeg', dpi=1200)
     # # pdb.set_trace()
     return
-outout = posterior_density()
+# output = posterior_density()
+
+def simple_density():
+    # bring in mcmc csv's
+    mcmc = pd.read_csv('data_inputs/model_outputs/all_params.csv', index_col=0)
+
+    # only bring in precip, temp, vpd. hist and modern. 
+    precip_pre = mcmc['bprecip[2]']
+    precip_post = mcmc['bprecip[1]']
+    temp_pre = mcmc['btemp[2]']
+    temp_post = mcmc['btemp[1]']
+    vpd_pre = mcmc['bv[2]']
+    vpd_post = mcmc['bv[1]']
+
+    plt.rc('font', size=14) 
+    sns.distplot(temp_pre, hist = False, kde = True,
+                    kde_kws = {'shade': True, 'linewidth': 2}, 
+                    label = 'Historic (1918-1972)',
+                    color='#663399')
+    sns.distplot(temp_post, hist = False, kde = True,
+                    kde_kws = {'shade': True, 'linewidth': 2}, 
+                    label = 'Modern (1973-2019)',
+                    color='#62baac')
+
+    plt.legend(prop={'size': 13}, loc='upper left')
+    # plt.figure(figsize=(8,6))
+    # plt.title(metric)
+    plt.title('Temperature', fontsize=16) # Vapor Pressure Deficit  Precipitation
+    plt.xlabel('Coefficient value', fontsize=14)
+    plt.ylabel('Posterior density', fontsize=14)
+    # plt.yticks(np.arange(0, 4.5, 0.5))
+    plt.xlim((-0.3,0.3))
+    plt.ylim((0,15))
+    plt.axvline(x=0, linestyle='--', color='black', linewidth='0.5')
+    # plt.show()
+    plt.savefig('data_outputs/density_plots/temp.jpeg', dpi=1200)
+
+    return
+
+# output = simple_density()
+
 
 def func_flow_hydro(vista):
     # pull out water year from vista to plot (try 2006, maybe 1995?)

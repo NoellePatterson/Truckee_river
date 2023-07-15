@@ -4,7 +4,8 @@ import pandas as pd
 from datetime import datetime, timedelta
 from dateutil.parser import parse
 import numpy as np
-from climata.usgs import InstantValueIO
+import scipy
+# from climata.usgs import InstantValueIO
 import pdb
 
 # # Import gage height tot from USGS - only need to do this once
@@ -97,9 +98,9 @@ mre_gw['date_time'] = pd.to_datetime(mre_gw['date_time'], infer_datetime_format=
 mre_gw = mre_gw.set_index('date_time')
 mre_hourly = mre_gw.resample('H').mean()
 # clean up well data a little. Replace bad vals (zero or negative) with prior good val
-for index, val in enumerate(mre_hourly['depth_ft']):
-    if val < 0:
-        mre_hourly['depth_ft'][index] =  mre_hourly['depth_ft'][index - 1]
+# for index, val in enumerate(mre_hourly['depth_ft']):
+#     if val < 0:
+#         mre_hourly['depth_ft'][index] =  mre_hourly['depth_ft'][index - 1]
 
 # transform vals so they are in same direction as gage heights 
 mre_hourly['depth_ft'] = (4.5 - mre_hourly['depth_ft'])*0.3048
@@ -122,6 +123,21 @@ plt.ylim(top=4)
 plt.ylabel('water level, meters')
 plt.legend()
 plt.show()
+
+# Get r^2 for US and DS between ref gage and GW
+x = ds_merge['height_m']
+y = ds_merge['depth_ft']
+mask = ~np.isnan(x) & ~np.isnan(y)
+stats = scipy.stats.linregress(x[mask], y[mask])
+r_sq_ds = stats.rvalue**2
+
+x = us_merge['height_m']
+y = us_merge['depth_ft']
+mask = ~np.isnan(x) & ~np.isnan(y)
+stats = scipy.stats.linregress(x[mask],y[mask])
+r_sq_us = stats.rvalue**2
+pdb.set_trace()
+
 
 # Decide units/axes for plotting
 
