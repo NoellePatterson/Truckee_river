@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import numpy as np
 import pdb
-from sklearn.linear_model import LinearRegression
+# from sklearn.linear_model import LinearRegression
 import glob
 import warnings
 
@@ -185,9 +185,191 @@ def prism_spring_vals():
     vpd_output.to_csv('data_inputs/spring_max_vpd.csv', index=False)
 # output = prism_spring_vals()
 
-def huge_format():
+def huge_format_rwi():
+    # organize data into huge format with all trees and variables all together
+    # input necessary files: all trees bai/rwi, tree metadata, prism avgd grids, flow pearson vals (derby and vista)
+    bb_rwi = pd.read_csv('data_inputs/Final_RWI/BB_rwi.csv', index_col=0)
+    mre_rwi = pd.read_csv('data_inputs/Final_RWI//MRE_rwi.csv', index_col=0)
+    mrw_rwi = pd.read_csv('data_inputs/Final_RWI/MRW_rwi.csv', index_col=0)
+    r_rwi = pd.read_csv('data_inputs/Final_RWI/R_rwi.csv', index_col=0)
+    n_rwi = pd.read_csv('data_inputs/Final_RWI/N_rwi.csv', index_col=0)
+    sites = [bb_rwi, mre_rwi, mrw_rwi, r_rwi, n_rwi]
+
+    tree_metadata = pd.read_csv('data_inputs/All_tree_metadata.csv')
+    vpd = pd.read_csv('data_inputs/annual_max_vpd.csv')
+    mean_t = pd.read_csv('data_inputs/annual_mean_temp.csv')
+    precip = pd.read_csv('data_inputs/annual_precip.csv')
+    spring_precip = pd.read_csv('data_inputs/spring_precip.csv')
+    # try a model version with spring-based input climate data
+    # spring_vpd = pd.read_csv('data_inputs/spring_max_vpd.csv')
+    # spring_t = pd.read_csv('data_inputs/prism_spring_temps.csv')
+    # spring_precip = pd.read_csv('data_inputs/spring_precip.csv')
+    ffc_blw_derby = pd.read_csv('data_inputs/streamflow/ffc_outputs/Blw_derby_pearson_vals.csv')
+    ffc_vista = pd.read_csv('data_inputs/streamflow/ffc_outputs/vista_pearson_vals.csv')
+    pdo = pd.read_csv('data_inputs/pdo.csv')
+
+    
+    # make sure environmental datasets rows are all traceable by year
+    ffc_blw_derby = ffc_blw_derby.set_index('Year')
+    ffc_vista = ffc_vista.set_index('Year')
+    tree_metadata = tree_metadata.drop('Dbh_cm', axis=1)
+    # prism_df = pd.merge(spring_vpd, spring_t, on='year')
+    # prism_df = pd.merge(prism_df, spring_precip, on='year')
+    prism_df = pd.merge(vpd, mean_t, on='year')
+    prism_df = pd.merge(prism_df, precip, on='year')
+    prism_df = pd.merge(prism_df, spring_precip, on='year')
+    prism_df = pd.merge(prism_df, pdo, on='year')
+
+    # Create variable for regulation period: pre/post 1973 for upstream sites, pre/post 1982 for downstream sites
+
+    # Create a bunch of lists to fill iteratively with needed data
+    meta_cols = tree_metadata.columns.tolist()
+    flow_cols = ffc_blw_derby.columns.tolist()
+    prism_cols = ['annual_max_vpd', 'annual_mean_temp', 'annual_precip', 'spring_precip', 'pdo']
+    # prism_cols = ['spring_max_vpd', 'spring_mean_temp', 'spring_precip']
+    columns = ['rwi', 'year', 'Tree_idN', 'newSiteID'] + meta_cols + ['regulation'] + prism_cols + flow_cols
+    rwi_ls = []
+    year_ls = []
+    tree_idN_ls = []
+    newSiteID_ls = []
+    tree_id_ls = []
+    site_id_ls  = []
+    lat_ls  = []
+    lon_ls  = []
+    sex_ls  = []
+    to_river_ls  = []
+    regulation = []
+    annual_max_vpd_ls  = []
+    annual_mean_temp_ls  = []
+    annual_precip_ls  = []
+    spring_precip_ls  = []
+    pdo_ls = []
+    fa_mag_ls = []
+    fa_tim_ls = []
+    wet_BFL_Mag_50_ls = []	
+    wet_Tim_ls = []	
+    wet_BFL_Dur_ls = []	
+    peak_mag_ls = []
+    sp_Mag_ls = []	
+    sp_Tim_ls = []	
+    sp_Dur_ls = []
+    sp_ROC_ls = []	
+    ds_Mag_50_ls = []	
+    ds_Mag_90_ls = []	
+    ds_Tim_ls = []	
+    ds_Dur_WS_ls = []	
+    avg_ls = []	
+    cv_ls = []
+
+    # Go through each site, by each column (tree) at a time. Append data to lists
+    for site in sites:
+        for tree in site.items(): # iterates over a tuple, 0 is name 1 is attribute list
+            tree_ls = tree[1].dropna()
+            # tree_ls = tree_ls[5:] # remove first five years growth to remove potential young growth effects. Only do this if not detrending.
+            # ID the row in tree_metadata that aligns with this tree
+            for index, value in enumerate(tree_metadata['Tree_id']):
+                if value == tree[0]:
+                    meta_index = index
+                    tree_id = tree_metadata['Tree_id'][meta_index]
+                    break
+            for tree_index, rwi in enumerate(tree_ls): # iterating through years
+                year = tree_ls.index[tree_index]
+                # remove tree data before 1918 since blw derby gage only starts
+                if year < 1918:
+                    continue
+                # find correct index in prism dataset
+                for p_index, value in enumerate(prism_df['year']):
+                    if value == year:
+                        prism_index = p_index
+                        break
+                # find correct index in streamflow dataset
+                if tree_id[0:3] == 'MR' or tree_id == 'R':
+                    flow_metrics = ffc_vista
+                else:
+                    flow_metrics = ffc_blw_derby
+                for f_index, value in enumerate(flow_metrics.index):
+                    if value == year:
+                        flow_index = f_index
+                        break
+                
+                # assign regulation period based on breakpoint year ()
+                site_name = tree_metadata['Site_id'][meta_index]
+                if site_name == 'BB' or site_name == 'N':
+                    breakpoint = 1973
+                else:
+                    breakpoint = 1982
+                if year < breakpoint:
+                    regulation.append('pre')
+                else:
+                    regulation.append('post')
+                
+                fa_mag_ls.append(flow_metrics['FA_Mag'].iloc[flow_index])
+                fa_tim_ls.append(flow_metrics['FA_Tim'].iloc[flow_index])
+                ds_Tim_ls.append(flow_metrics['DS_Tim'].iloc[flow_index]) 
+                ds_Mag_90_ls.append(flow_metrics['DS_Mag_90'].iloc[flow_index]) 
+                ds_Mag_50_ls.append(flow_metrics['DS_Mag_50'].iloc[flow_index]) 
+                ds_Dur_WS_ls.append(flow_metrics['DS_Dur_WS'].iloc[flow_index])
+                cv_ls.append(flow_metrics['CV'].iloc[flow_index]) 
+                avg_ls.append(flow_metrics['Avg'].iloc[flow_index])
+                sp_Mag_ls.append(flow_metrics['SP_Mag'].iloc[flow_index]) 
+                sp_ROC_ls.append(flow_metrics['SP_ROC'].iloc[flow_index]) 
+                sp_Tim_ls.append(flow_metrics['SP_Tim'].iloc[flow_index]) 
+                sp_Dur_ls.append(flow_metrics['SP_Dur'].iloc[flow_index]) 
+                wet_BFL_Dur_ls.append(flow_metrics['Wet_BFL_Dur'].iloc[flow_index]) 
+                wet_BFL_Mag_50_ls.append(flow_metrics['Wet_BFL_Mag_50'].iloc[flow_index]) 
+                wet_Tim_ls.append(flow_metrics['Wet_Tim'].iloc[flow_index]) 
+                peak_mag_ls.append(flow_metrics['Peak_mag'].iloc[flow_index])
+                year_ls.append(year)    
+
+                rwi_ls.append(rwi)
+                tree_id_ls.append(tree_metadata['Tree_id'][meta_index])
+                site_id_ls.append(tree_metadata['Site_id'][meta_index])
+                tree_idN_ls.append(0)
+                newSiteID_ls.append(0) # (s_index+1)
+                lat_ls.append(tree_metadata['Lat'][meta_index])
+                lon_ls.append(tree_metadata['Lon'][meta_index]) 
+                sex_ls.append(tree_metadata['Sex'][meta_index]) 
+                to_river_ls.append(tree_metadata['To_river_m'][meta_index]) 
+
+                annual_max_vpd_ls.append(prism_df['annual_max_vpd'][prism_index]) 
+                annual_mean_temp_ls.append(prism_df['annual_mean_temp'][prism_index]) 
+                annual_precip_ls.append(prism_df['annual_precip'][prism_index]) 
+                spring_precip_ls.append(prism_df['spring_precip'][prism_index]) 
+                pdo_ls.append(prism_df['pdo'][prism_index])
+
+    # Populate unique num id's for tree and site
+    current_site_id = site_id_ls[0]
+    s_counter = 1
+    for s_index, site in enumerate(site_id_ls):
+        if site == current_site_id:
+            newSiteID_ls[s_index] = s_counter
+        else:
+            current_site_id = site_id_ls[s_index]
+            s_counter += 1
+            newSiteID_ls[s_index] = s_counter
+
+    current_tree_id = tree_id_ls[0]
+    t_counter = 1
+    for t_index, tree in enumerate(tree_id_ls):
+        if tree == current_tree_id:
+            tree_idN_ls[t_index] = t_counter
+        else:
+            current_tree_id = tree_id_ls[t_index]
+            t_counter += 1
+            tree_idN_ls[t_index] = t_counter
+    pdb.set_trace()
+    zipped_ls = list(zip(rwi_ls, year_ls, tree_idN_ls, newSiteID_ls, tree_id_ls, site_id_ls, lat_ls, lon_ls, sex_ls, to_river_ls, regulation, annual_max_vpd_ls,
+    annual_mean_temp_ls, annual_precip_ls, spring_precip_ls, pdo_ls, fa_mag_ls, fa_tim_ls, wet_BFL_Mag_50_ls, wet_Tim_ls, wet_BFL_Dur_ls, peak_mag_ls, sp_Mag_ls,
+    sp_Tim_ls, sp_Dur_ls, sp_ROC_ls, ds_Mag_50_ls, ds_Mag_90_ls, ds_Tim_ls, ds_Dur_WS_ls, avg_ls, cv_ls))
+    huge_df = pd.DataFrame(zipped_ls, columns=columns)
+    huge_df.to_csv('data_outputs/all_model_data_2024_rwi.csv')
+    return
+output = huge_format_rwi()
+
+def huge_format_bai():
     # organize data into huge format with all trees and variables all together
     # input necessary files: all trees bai, tree metadata, prism avgd grids, flow pearson vals (derby and vista)
+
     bb_bai = pd.read_csv('data_inputs/all_trees_bai/BB_bai.csv', index_col=0)
     mre_bai = pd.read_csv('data_inputs/all_trees_bai/MRE_bai.csv', index_col=0)
     mrw_bai = pd.read_csv('data_inputs/all_trees_bai/MRW_bai.csv', index_col=0)
@@ -221,7 +403,6 @@ def huge_format():
     prism_df = pd.merge(prism_df, pdo, on='year')
 
     # Create variable for regulation period: pre/post 1973 for upstream sites, pre/post 1982 for downstream sites
-
 
     # Create a bunch of lists to fill iteratively with needed data
     meta_cols = tree_metadata.columns.tolist()
@@ -262,7 +443,7 @@ def huge_format():
 
     # Go through each site, by each column (tree) at a time. Append data to lists
     for site in sites:
-        for tree in site.iteritems(): # iterates over a tuple, 0 is name 1 is attribute list
+        for tree in site.items(): # iterates over a tuple, 0 is name 1 is attribute list
             # ID the row in tree_metadata that aligns with this tree
             tree_ls = tree[1].dropna()
             tree_ls = tree_ls[5:] # remove first five years growth to remove potential young growth effects
@@ -275,9 +456,6 @@ def huge_format():
                 year = tree_ls.index[tree_index]
                 # remove tree data before 1918 since blw derby gage only starts
                 if year < 1918:
-                    continue
-                # don't include any neg/zero-valued BAI (error)
-                if bai <= 0:
                     continue
                 # find correct index in prism dataset
                 for p_index, value in enumerate(prism_df['year']):
@@ -342,9 +520,8 @@ def huge_format():
     annual_mean_temp_ls, annual_precip_ls, spring_precip_ls, pdo_ls, fa_mag_ls, fa_tim_ls, wet_BFL_Mag_50_ls, wet_Tim_ls, wet_BFL_Dur_ls, peak_mag_ls, sp_Mag_ls,
     sp_Tim_ls, sp_Dur_ls, sp_ROC_ls, ds_Mag_50_ls, ds_Mag_90_ls, ds_Tim_ls, ds_Dur_WS_ls, avg_ls, cv_ls))
     huge_df = pd.DataFrame(zipped_ls, columns=columns)
-    huge_df.to_csv('data_outputs/all_model_data.csv')
+    # huge_df.to_csv('data_outputs/all_model_data_2024_bai.csv')
     return
-output = huge_format()
 
 def tree_age():
     bb_bai = pd.read_csv('data_inputs/all_trees_bai/BB_bai.csv', index_col=0)
@@ -363,4 +540,4 @@ def tree_age():
     output = pd.DataFrame(tree_age, index=trees)
     output.to_csv('data_outputs/tree_age.csv')
     return
-# output = tree_age()
+output = huge_format_bai()

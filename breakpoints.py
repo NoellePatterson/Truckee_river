@@ -5,6 +5,7 @@ import ruptures as rpt
 import jenkspy
 import numpy as np
 import matplotlib.pyplot as plt
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
 import pdb
 plt.rcParams["axes.grid.axis"] ="y"
 plt.rcParams["axes.grid"] = True
@@ -24,10 +25,13 @@ vista_upstream_ffc = vista_upstream_ffc.set_index('Year')
 breakpoint_yrs = []
 breakpoint_mag = []
 breakpoint_perc = []
-metric_cols = derby_downstream_ffc.columns
+significance = []
+# metric_cols = derby_downstream_ffc.columns
+metric_cols = vista_upstream_ffc.columns
 window_len = 30
 for metric in metric_cols:
-    data = np.array(derby_downstream_ffc[metric])#[23:] # for vista, skip over many NAs 
+    # data = np.array(derby_downstream_ffc[metric])
+    data = np.array(vista_upstream_ffc[metric])[23:] # for vista, skip over many NAs 
     breakpoint_results = pd.Series(np.nan, index=list(range(1,len(data)-(window_len*2)+1,1)))
     for index in range(len(data) - (window_len*2)):
         window1 = np.nanmean(data[index:index+window_len])
@@ -37,19 +41,29 @@ for metric in metric_cols:
     
     final = max(breakpoint_results)
 
-    year_index = breakpoint_results[breakpoint_results==final].index[0] + window_len #+23 for upstream
-    year = derby_downstream_ffc.index[year_index]
-    # year = vista_upstream_ffc.index[year_index + 23]
+    # year_index = breakpoint_results[breakpoint_results==final].index[0] + window_len 
+    year_index = breakpoint_results[breakpoint_results==final].index[0] + window_len +23 # +23 for upstream
+    # year = derby_downstream_ffc.index[year_index]
+    year = vista_upstream_ffc.index[year_index]
     breakpoint_yrs.append(year)
+    year_index = year_index - 23 # for upstream need to remove 23 from calcs
     perc = (np.nanmean(data[year_index:]) - np.nanmean(data[:year_index]))/np.nanmean(data[:year_index])
     mag = np.nanmean(data[year_index:]) - np.nanmean(data[:year_index])
+    tuk_df = pd.DataFrame({'data': data, 'groups':np.repeat(['one', 'two'], repeats=[len(data)-year_index, year_index])})
+    tuk_df = tuk_df.dropna()
+    tukey_results = pairwise_tukeyhsd(endog=tuk_df['data'], groups=tuk_df['groups'], alpha=0.05)
+    tukey_sig = tukey_results.summary().data[1][-1]
+
     breakpoint_mag.append(mag)
     breakpoint_perc.append(perc)
+    significance.append(tukey_sig)
     # if metric == 'SP_ROC':
     #     pdb.set_trace()
     # calc diff as a percentage
-blw_derby_output = pd.DataFrame(list(zip(breakpoint_yrs, breakpoint_mag, breakpoint_perc)), columns=['years', 'change mag', 'percent diff'], index=metric_cols) 
-blw_derby_output.to_csv('data_outputs/metric_diffs_blw_derby.csv')
+# blw_derby_output = pd.DataFrame(list(zip(breakpoint_yrs, breakpoint_mag, breakpoint_perc, significance)), columns=['years', 'change mag', 'percent diff', 'Tukey hsd'], index=metric_cols) 
+vista_output = pd.DataFrame(list(zip(breakpoint_yrs, breakpoint_mag, breakpoint_perc, significance)), columns=['years', 'change mag', 'percent diff', 'Tukey hsd'], index=metric_cols) 
+# blw_derby_output.to_csv('data_outputs/metric_diffs_blw_derby.csv')
+vista_output.to_csv('data_outputs/metric_diffs_vista.csv')
 pdb.set_trace()
 
 # Make plot printout of notable breakpoints
@@ -110,7 +124,7 @@ plt.ylabel('Percent')
 plt.grid(axis='x')
 plt.xticks(range(1930, 2020, 10))
 plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=0.5, hspace=0.5)
-plt.savefig('data_outputs/flow_breakpoints.png', dpi=1200)
+# plt.savefig('data_outputs/flow_breakpoints.png', dpi=1200)
 plt.show()
 pdb.set_trace()
 

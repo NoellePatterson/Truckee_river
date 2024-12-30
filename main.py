@@ -1,4 +1,4 @@
-from utils import huge_format, prism_spring_vals
+from utils import huge_format_bai, huge_format_rwi
 import warnings
 import pandas as pd
 import numpy as np
@@ -6,7 +6,9 @@ from datetime import datetime, timedelta
 
 
 # output = prism_spring_vals()
-# output = huge_format()
+# output = huge_format_bai()
+output = huge_format_rwi()
+import pdb; pdb.set_trace()
 
 prism_monthly = pd.read_csv('data_inputs/prism_averaged_grids.csv')
 dates = prism_monthly['date']

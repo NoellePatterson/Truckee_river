@@ -35,9 +35,9 @@ mrw_bai = mrw_bai[:-1].reset_index(drop=True)
 r_bai = r_bai[:-1].reset_index(drop=True)
 
 # try offsetting streamflow metrics by one year (lag effect) to see if corrs are stronger
-for index, value in enumerate(derby_downstream_ffc['year']):
-    derby_downstream_ffc['year'].iloc[index] = value + 1
-    vista_upstream_ffc['year'].iloc[index] = vista_upstream_ffc['year'].iloc[index] + 1
+# for index, value in enumerate(derby_downstream_ffc['year']):
+#     derby_downstream_ffc['year'].iloc[index] = value + 1
+#     vista_upstream_ffc['year'].iloc[index] = vista_upstream_ffc['year'].iloc[index] + 1
 
 # run pearson corr on matrix. 
 # create input correlation matrix for BB
@@ -54,7 +54,7 @@ def create_correlation_matrix(site_bai, site_flow_data, output_name):
     plt.tight_layout()
     # import pdb; pdb.set_trace()
     plt.savefig('data_outputs/{}_corr_matrix_flow_offset.jpeg'.format(output_name), bbox_inches='tight')
-# corr = create_correlation_matrix(r_bai, vista_upstream_ffc, 'Ranch 102')
+corr = create_correlation_matrix(r_bai, vista_upstream_ffc, 'Ranch 102')
 
 upstream_isotopes = isotopes.drop(['N'], axis=1)
 downstream_isotopes = isotopes[['year', 'N']]
@@ -126,5 +126,5 @@ ax.set(title=f'Numana trees N 5, 7, 13, 14\nIsotope leads <> BAI leads     ', xl
 ax.set_xticks([0, 5, 10, 15, 20, 25, 30])
 ax.set_xticklabels([-15, -10, -5, 0, 5, 10, 15]);
 plt.legend()
-plt.savefig('data_outputs/Cross correlations/Cross_correlation_N_iso_trees_only.jpeg', bbox_inches='tight')
+# plt.savefig('data_outputs/Cross correlations/Cross_correlation_N_iso_trees_only.jpeg', bbox_inches='tight')
 pdb.set_trace()
